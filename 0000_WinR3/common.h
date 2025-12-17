@@ -7,6 +7,7 @@
 #include<Psapi.h>
 #include<tlhelp32.h>
 #include<process.h>
+#include"resource.h"
 
 
 void p000_000();

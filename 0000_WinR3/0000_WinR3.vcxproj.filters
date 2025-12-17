@@ -33,10 +33,50 @@
     <ClCompile Include="000_编程基础\000_003_线程.cpp">
       <Filter>源文件\000_编程基础</Filter>
     </ClCompile>
+    <ClCompile Include="000_编程基础\000_004_线程安全.cpp">
+      <Filter>源文件\000_编程基础</Filter>
+    </ClCompile>
+    <ClCompile Include="000_编程基础\000_005_窗口逻辑.cpp">
+      <Filter>源文件\000_编程基础</Filter>
+    </ClCompile>
+    <ClCompile Include="000_编程基础\000_006_窗口管理.cpp">
+      <Filter>源文件\000_编程基础</Filter>
+    </ClCompile>
+    <ClCompile Include="000_编程基础\000_007_对话框.cpp">
+      <Filter>源文件\000_编程基础</Filter>
+    </ClCompile>
+    <ClCompile Include="000_编程基础\000_008_GDI.cpp">
+      <Filter>源文件\000_编程基础</Filter>
+    </ClCompile>
+    <ClCompile Include="000_编程基础\000_009_内存管理.cpp">
+      <Filter>源文件\000_编程基础</Filter>
+    </ClCompile>
+    <ClCompile Include="000_编程基础\000_010_文件系统.cpp">
+      <Filter>源文件\000_编程基础</Filter>
+    </ClCompile>
+    <ClCompile Include="000_编程基础\000_011_动态链接库.cpp">
+      <Filter>源文件\000_编程基础</Filter>
+    </ClCompile>
+    <ClCompile Include="000_编程基础\000_012_静态链接库.cpp">
+      <Filter>源文件\000_编程基础</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="0000_WinR3.rc">
+      <Filter>资源文件</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="bitmap1.bmp">
+      <Filter>资源文件</Filter>
+    </Image>
   </ItemGroup>
 </Project>

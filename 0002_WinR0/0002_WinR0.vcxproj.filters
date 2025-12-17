@@ -42,6 +42,18 @@
     <ClCompile Include="test.c">
       <Filter>Resource Files</Filter>
     </ClCompile>
+    <ClCompile Include="000_保护模式\000_003_callgate.c">
+      <Filter>Resource Files\000_保护模式x86</Filter>
+    </ClCompile>
+    <ClCompile Include="000_保护模式\000_004_intgate.c">
+      <Filter>Resource Files\000_保护模式x86</Filter>
+    </ClCompile>
+    <ClCompile Include="000_保护模式\000_005_trapgate.c">
+      <Filter>Resource Files\000_保护模式x86</Filter>
+    </ClCompile>
+    <ClCompile Include="000_保护模式\000_006_task.c">
+      <Filter>Resource Files\000_保护模式x86</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common.h">

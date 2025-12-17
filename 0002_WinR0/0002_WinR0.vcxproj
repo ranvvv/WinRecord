@@ -188,6 +188,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="000_保护模式\000_003_callgate.c" />
+    <ClCompile Include="000_保护模式\000_004_intgate.c" />
+    <ClCompile Include="000_保护模式\000_005_trapgate.c" />
+    <ClCompile Include="000_保护模式\000_006_task.c" />
     <ClCompile Include="test.c" />
     <ClCompile Include="main.c" />
   </ItemGroup>

@@ -34,3 +34,28 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT DriverObject, IN PUNICODE_STRING Registry
 
 	return run();
 }
+
+
+// 打印调试信息
+VOID _MDbgPrint(PCHAR format, ...)
+{
+	// KdPrint(("%s", buffer));
+
+	va_list args;
+	va_start(args, format);
+	CHAR buffer[1024];
+	vsprintf(buffer, format, args);
+	DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "%s", buffer);
+	va_end(args);
+}
+
+
+
+VOID PrintClock(PCHAR text)
+{
+	LARGE_INTEGER dida;
+	KeQueryTickCount(&dida);						// 获取滴答计数器
+	//ULONG timeIncrement = KeQueryTimeIncrement();	// 获取时间增量
+	UINT64 seconds = (dida.QuadPart * KeQueryTimeIncrement()) / 10000000;	// KeQueryTimeIncrement() 获取时间增量
+	DbgPrintEx(77, 0, "\n\n -----  %s : %I64u\n\n", text, seconds);
+}
