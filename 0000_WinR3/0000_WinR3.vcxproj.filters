@@ -48,9 +48,6 @@
     <ClCompile Include="000_编程基础\000_008_GDI.cpp">
       <Filter>源文件\000_编程基础</Filter>
     </ClCompile>
-    <ClCompile Include="000_编程基础\000_009_内存管理.cpp">
-      <Filter>源文件\000_编程基础</Filter>
-    </ClCompile>
     <ClCompile Include="000_编程基础\000_010_文件系统.cpp">
       <Filter>源文件\000_编程基础</Filter>
     </ClCompile>
@@ -58,6 +55,12 @@
       <Filter>源文件\000_编程基础</Filter>
     </ClCompile>
     <ClCompile Include="000_编程基础\000_012_静态链接库.cpp">
+      <Filter>源文件\000_编程基础</Filter>
+    </ClCompile>
+    <ClCompile Include="000_编程基础\000_009_子窗口控件_窗口配置.cpp">
+      <Filter>源文件\000_编程基础</Filter>
+    </ClCompile>
+    <ClCompile Include="000_编程基础\000_013_内存管理.cpp">
       <Filter>源文件\000_编程基础</Filter>
     </ClCompile>
   </ItemGroup>
@@ -76,6 +79,9 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="bitmap1.bmp">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="icon1.ico">
       <Filter>资源文件</Filter>
     </Image>
   </ItemGroup>

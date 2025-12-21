@@ -4,7 +4,7 @@
 // common main
 int APIENTRY mWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PTSTR cmdline, int cmdshow)
 {
-	p000_005();
+	p000_009();
 	return 0;
 }
 
@@ -21,12 +21,10 @@ int main(int argc, char** argv)
 
 	int result = 0;
 
-	//setlocale(LC_ALL, "Chinese_China.936");	// 控制台GBK编码,解决控制台中文乱码问题
-	//SetConsoleOutputCP(936);				// GBK编码
-	//SetConsoleOutputCP(1200);
-	//SetConsoleOutputCP(65001);				// UTF-8编码
 
-	setlocale(LC_ALL, "");
+	setlocale(LC_ALL, "");				// wprintf遵从本机编码输出,  wprintf提供的是UNICODE16编码,控制台是GBK,  输出时就会转成GBK输出.
+	// setlocale(LC_ALL, "") 的核心作用，是让 wprintf 自动识别「当前系统 / 控制台的实际编码
+	//SetConsoleOutputCP(936);				// GBK编码
 
 	result = mWinMain(GetModuleHandle(NULL), NULL, NULL, SW_NORMAL);
 	system("pause");

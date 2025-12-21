@@ -153,10 +153,11 @@
     <ClCompile Include="000_编程基础\000_003_线程.cpp" />
     <ClCompile Include="000_编程基础\000_004_线程安全.cpp" />
     <ClCompile Include="000_编程基础\000_005_窗口逻辑.cpp" />
+    <ClCompile Include="000_编程基础\000_009_子窗口控件_窗口配置.cpp" />
     <ClCompile Include="000_编程基础\000_006_窗口管理.cpp" />
     <ClCompile Include="000_编程基础\000_007_对话框.cpp" />
     <ClCompile Include="000_编程基础\000_008_GDI.cpp" />
-    <ClCompile Include="000_编程基础\000_009_内存管理.cpp" />
+    <ClCompile Include="000_编程基础\000_013_内存管理.cpp" />
     <ClCompile Include="000_编程基础\000_010_文件系统.cpp" />
     <ClCompile Include="000_编程基础\000_011_动态链接库.cpp" />
     <ClCompile Include="000_编程基础\000_012_静态链接库.cpp" />
@@ -171,6 +172,7 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="bitmap1.bmp" />
+    <Image Include="icon1.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -97,6 +97,16 @@ END
 
 IDB_BITMAP_TEST         BITMAP                  "bitmap1.bmp"
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_ICON_TEST           ICON                    "icon1.ico"
+
 #endif    // 中文(简体，中国) resources
 /////////////////////////////////////////////////////////////////////////////
 
