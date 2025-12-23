@@ -460,7 +460,259 @@ static void s6()
 
 
 
+
+// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+//					7. 信号量
+
+// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+static HANDLE g_hSemaphore_s7;
+static CRITICAL_SECTION g_cs_s7;
+static int g_tickets_s7 = 1000;
+
+static DWORD WINAPI ThreadProrSemaphore_s7(LPVOID lpParameter)
+{
+	DWORD param = (DWORD)(UINT64)lpParameter;
+
+	while (1)
+	{
+		WaitForSingleObject(g_hSemaphore_s7, INFINITE);
+		EnterCriticalSection(&g_cs_s7);		// 由于有2个线程同时访问,所以还是要加锁才行.
+		if (g_tickets_s7 > 0)
+		{
+			// 即便是单线程,也是有线程安全问题的,可能在这里发生线程切换,但是此时g_tickets已经减没了.
+			printf("thread:%d 还有%d张票\n", param, g_tickets_s7);
+			g_tickets_s7--;
+			printf("thread:%d 卖出一张,还有%d张票\n", param, g_tickets_s7);
+		}
+		else
+		{
+			LeaveCriticalSection(&g_cs_s7);
+			ReleaseSemaphore(g_hSemaphore_s7, 1, NULL);
+			break;
+		}
+		LeaveCriticalSection(&g_cs_s7);
+		ReleaseSemaphore(g_hSemaphore_s7, 1, NULL);
+	}
+
+	return 0;
+}
+
+static void s7()
+{
+	DWORD threadID = 0;
+	DWORD threadParam = 0x1;
+	HANDLE aThreadHandle[4] = { 0 };
+
+	InitializeCriticalSection(&g_cs_s7);
+	g_hSemaphore_s7 = CreateSemaphore(NULL, 0, 2, NULL);
+
+	aThreadHandle[0] = CreateThread(NULL, 0, ThreadProrSemaphore_s7, (LPVOID)0/*NULL*/, 0/*CREATE_SUSPENDED*/, &threadID);
+	aThreadHandle[1] = CreateThread(NULL, 0, ThreadProrSemaphore_s7, (LPVOID)1/*NULL*/, 0/*CREATE_SUSPENDED*/, &threadID);
+	aThreadHandle[2] = CreateThread(NULL, 0, ThreadProrSemaphore_s7, (LPVOID)2/*NULL*/, 0/*CREATE_SUSPENDED*/, &threadID);
+	aThreadHandle[3] = CreateThread(NULL, 0, ThreadProrSemaphore_s7, (LPVOID)3/*NULL*/, 0/*CREATE_SUSPENDED*/, &threadID);
+
+
+	ReleaseSemaphore(g_hSemaphore_s7, 2, NULL);
+
+	WaitForMultipleObjects(4, aThreadHandle, TRUE, INFINITE);
+
+	printf("ok\n");
+
+	CloseHandle(aThreadHandle[0]);
+	CloseHandle(aThreadHandle[1]);
+	CloseHandle(aThreadHandle[2]);
+	CloseHandle(aThreadHandle[3]);
+}
+
+
+// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+//					8. 生产消费实例
+
+// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+static HWND hDlg_s8;	// 对话框句柄
+static HANDLE g_hSemaphore_Productor_s8;
+static HANDLE g_hSemaphore_Consumer_s8;
+static CRITICAL_SECTION cs_s8;
+
+static DWORD WINAPI ThreadProc_s8_productor(LPVOID lpParameter)
+{
+	// 读取资源
+	TCHAR buf[1024];
+	TCHAR c[2] = { 0 };
+	UINT n = 0;
+	while (1)
+	{
+		WaitForSingleObject(g_hSemaphore_Productor_s8, INFINITE);
+
+		n = GetDlgItemText(hDlg_s8, IDC_EDIT_SAFE_RESOURCE, buf, sizeof(buf)/sizeof(TCHAR));
+		if (n == 0)
+			break; // 没有资源了,退出
+
+		c[0] = buf[0];
+		SetDlgItemText(hDlg_s8, IDC_EDIT_SAFE_RESOURCE, buf + 1);
+
+		EnterCriticalSection(&cs_s8);
+		// 测试A
+		n = GetDlgItemText(hDlg_s8, IDC_EDIT_SAFE_A , buf, sizeof(buf)/sizeof(TCHAR));
+		if (n==0)
+		{
+			SetDlgItemText(hDlg_s8, IDC_EDIT_SAFE_A , c);
+		}
+		else
+		{
+			// 测试B
+			n = GetDlgItemText(hDlg_s8, IDC_EDIT_SAFE_B, buf, sizeof(buf) / sizeof(TCHAR));
+			if (n == 0)
+				SetDlgItemText(hDlg_s8, IDC_EDIT_SAFE_B, c);
+		}
+		LeaveCriticalSection(&cs_s8);
+		Sleep(300);
+		ReleaseSemaphore(g_hSemaphore_Consumer_s8, 1, NULL);
+	}
+
+	return 0;
+}
+
+static DWORD WINAPI ThreadProc_s8_consumer(LPVOID lpParameter)
+{
+	TCHAR buf[1024];
+	UINT n = 0;
+	TCHAR c[2] = { 0 };
+	int eid = 0;
+	switch ((UINT)lpParameter)
+	{
+		case 0:
+			eid = IDC_EDIT_SAFE_C1;
+		break;
+		case 1:
+			eid = IDC_EDIT_SAFE_C2;
+			break;
+		case 2:
+			eid = IDC_EDIT_SAFE_C3;
+			break;
+		case 3:
+			eid = IDC_EDIT_SAFE_C4;
+			break;
+		default:
+			return 0;
+	}
+	
+
+	while (1)
+	{
+		Sleep(3000);
+		WaitForSingleObject(g_hSemaphore_Consumer_s8, INFINITE);
+		EnterCriticalSection(&cs_s8);
+		memset(c, 0, sizeof(c));
+		n = GetDlgItemText(hDlg_s8, IDC_EDIT_SAFE_A , buf, sizeof(buf)/sizeof(TCHAR));
+		if (n != 0)
+		{
+			c[0] = buf[0];
+			SetDlgItemText(hDlg_s8, IDC_EDIT_SAFE_A, TEXT(""));
+		}
+		else
+		{
+			n = GetDlgItemText(hDlg_s8, IDC_EDIT_SAFE_B , buf, sizeof(buf)/sizeof(TCHAR));
+			c[0] = buf[0];
+			SetDlgItemText(hDlg_s8, IDC_EDIT_SAFE_B , TEXT(""));
+		}
+
+		GetDlgItemText(hDlg_s8, eid , buf, sizeof(buf)/sizeof(TCHAR));
+		lstrcat(buf, c);
+		SetDlgItemText(hDlg_s8, eid , buf);
+		LeaveCriticalSection(&cs_s8);
+		ReleaseSemaphore(g_hSemaphore_Productor_s8, 1, NULL);
+	}
+
+	return 0;
+}
+
+static DWORD WINAPI ThreadProc_s8_begin(LPVOID lpParameter)
+{
+	DWORD result;
+	DWORD threadID = 0;
+	g_hSemaphore_Productor_s8 = CreateSemaphore(NULL, 2, 2, NULL);
+	g_hSemaphore_Consumer_s8 = CreateSemaphore(NULL, 0, 2, NULL);
+	InitializeCriticalSection(&cs_s8);
+
+	HANDLE hThread[5];
+
+	// 生产者线程
+	hThread[0] = CreateThread(NULL, 0, ThreadProc_s8_productor, (LPVOID)0 , 0, &threadID);
+	hThread[1] = CreateThread(NULL, 0, ThreadProc_s8_consumer, (LPVOID)0 , 0, &threadID);
+	hThread[2] = CreateThread(NULL, 0, ThreadProc_s8_consumer, (LPVOID)1 , 0, &threadID);
+	hThread[3] = CreateThread(NULL, 0, ThreadProc_s8_consumer, (LPVOID)2 , 0, &threadID);
+	hThread[4] = CreateThread(NULL, 0, ThreadProc_s8_consumer, (LPVOID)3 , 0, &threadID);
+
+	WaitForMultipleObjects(5, hThread, TRUE, INFINITE);
+
+	CloseHandle(hThread[0]);
+	CloseHandle(hThread[1]);
+	CloseHandle(hThread[2]);
+	CloseHandle(hThread[3]);
+	CloseHandle(hThread[4]);
+
+	CloseHandle(g_hSemaphore_Productor_s8);
+	CloseHandle(g_hSemaphore_Consumer_s8);
+	DeleteCriticalSection(&cs_s8);
+
+	return 0;
+}
+
+static LRESULT CALLBACK mdlgProc_s8(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	// 消息处理
+	switch (msg)
+	{
+	case WM_INITDIALOG:	
+	{
+		hDlg_s8 = hwnd;
+		SetDlgItemText(hwnd, IDC_EDIT_SAFE_RESOURCE, TEXT("ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+		break;
+	}
+	case WM_COMMAND:		
+	{
+		switch (LOWORD(wParam))
+		{
+		case IDC_BUTTON_SAFE_BEGIN:
+		{
+			// 生产者线程
+			HANDLE hThread = CreateThread(NULL, 0, ThreadProc_s8_begin, (LPVOID)0, 0, NULL);
+			CloseHandle(hThread);
+			break;
+		}
+		default:
+			break;
+		}
+		break;
+	}
+	case WM_CLOSE:						// 点右上角关闭按钮时发送此消息.
+		EndDialog(hwnd, 0x1111);		// 退出消息循环,使得DialogBox得以返回.
+		break;
+	default:
+		return FALSE;			// 没处理交给默认,返回false
+	}
+	return TRUE;					// 处理了返回true
+}
+
+static void s8()
+{
+	DialogBoxParam(GetModuleHandle(0), (LPCTSTR)MAKEINTRESOURCEA(IDD_DIALOG_THREAD_SAFE), 0, (DLGPROC)mdlgProc_s8, 0x12345678);
+}
+
+
+
+// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
 void p000_004()
 {
-	s6();
+	s8();
 }

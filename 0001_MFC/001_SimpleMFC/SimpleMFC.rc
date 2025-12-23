@@ -1,0 +1,113 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "winres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// 中文(简体，中国) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+#pragma code_page(936)
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""winres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDS_TITLE MENU
+BEGIN
+    MENUITEM "a1",                          0
+    MENUITEM "a2",                          0
+END
+
+IDR_MENU1 MENU
+BEGIN
+    POPUP "a1"
+    BEGIN
+        MENUITEM "a1_1",                        ID_A1_A1
+    END
+    POPUP "a2"
+    BEGIN
+        MENUITEM "a2_1",                        ID_A2_A2
+    END
+END
+
+IDR_MENU2 MENU
+BEGIN
+    POPUP "b1"
+    BEGIN
+        MENUITEM "b1_1",                        ID_B1_B1
+    END
+    POPUP "b2"
+    BEGIN
+        MENUITEM "b2_1",                        ID_B2_B2
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE
+BEGIN
+    IDS_TITLE               "1234"
+END
+
+STRINGTABLE
+BEGIN
+    AFX_IDS_UNTITLED        "12345"
+END
+
+#endif    // 中文(简体，中国) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
