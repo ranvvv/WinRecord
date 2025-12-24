@@ -8,28 +8,17 @@
 #endif
 
 
-// CWinTApp
-
 BEGIN_MESSAGE_MAP(CWinTApp, CWinApp)
 	ON_COMMAND(ID_HELP, &CWinApp::OnHelp)
 END_MESSAGE_MAP()
 
 
-// CWinTApp 构造
+CWinTApp theApp;
 
 CWinTApp::CWinTApp()
 {
-	// TODO: 在此处添加构造代码，
-	// 将所有重要的初始化放置在 InitInstance 中
 }
 
-
-// 唯一的 CWinTApp 对象
-
-CWinTApp theApp;
-
-
-// CWinTApp 初始化
 
 BOOL CWinTApp::InitInstance()
 {

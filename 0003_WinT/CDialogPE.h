@@ -6,12 +6,22 @@
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
+struct INFO_POSITION {
+	UINT32 offset;
+	UINT32 length;
+};
 
 
 class CDialogPE : public CDialogEx
 {
 	DECLARE_DYNAMIC(CDialogPE)
 	DECLARE_MESSAGE_MAP()
+
+	// 对话框数据
+#ifdef AFX_DESIGN_TIME
+	enum { IDD = IDD_DIALOG_PE };
+#endif
+
 
 private:
 	PCHAR m_pBuffer;					// 缓冲区指针
@@ -25,21 +35,28 @@ private:
 	CTreeCtrl m_tree_header;			// header 树控件
 	CListCtrl m_list_section;			// section 列表控件
 	CButton m_button_table[16];			// 表格控件数组
+	CEdit m_edit_text;					// 文本信息编辑框
+
+	INFO_POSITION m_infoPosition[100];	// 用来存储信息的位置和长度,方便在hex中高亮显示,0-50 用于header,50-80 用于section,80-100 未使用
 
 
 public:
 	CDialogPE(PCHAR pBuffer,UINT32 length,UINT32 isMemImage = 0, CString path = TEXT(""), CWnd* pParent = nullptr);   // 标准构造函数
 	virtual ~CDialogPE();
 
-// 对话框数据
-#ifdef AFX_DESIGN_TIME
-	enum { IDD = IDD_DIALOG_PE };
-#endif
+public:
+	int mCreateItems();
+	int mInitItems();
+	int mAnalyzePEFile();
+	int mAnalyzeHeaderInfo();
+	int mAnalyzeSectionInfo();
+	int mAnalyzeTableInfo();
 
 protected:
 	virtual BOOL OnInitDialog();
 	virtual void OnCancel();
 	virtual void PostNcDestroy();
+	void OnButtonClickDataDirectory(UINT id);
 };
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -74,5 +91,8 @@ protected:
 #define CBUTTON_TABLE_ID_END 1030
 #define CBUTTON_TABLE_WIDTH 150
 #define CBUTTON_TABLE_HEIGHT 30
+
+// 编辑 text 控件定义
+#define CEDIT_TEXT_ID 1031
 
 

@@ -24,4 +24,5 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	afx_msg void OnBnClickedButtonPe();
+	afx_msg void OnDropFiles(HDROP hDropInfo);
 };

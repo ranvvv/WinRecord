@@ -4,6 +4,7 @@
 #include "WinTDlg.h"
 #include "afxdialogex.h"
 #include "CDialogPE.h"
+#include "Common.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -13,6 +14,7 @@ BEGIN_MESSAGE_MAP(CWinTDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BUTTON_PE, &CWinTDlg::OnBnClickedButtonPe)
+	ON_WM_DROPFILES()
 END_MESSAGE_MAP()
 
 
@@ -66,60 +68,68 @@ HCURSOR CWinTDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-
-
+// PE文件分析
 void CWinTDlg::OnBnClickedButtonPe()
 {	
-	/*  正式代码
+	// 正式代码
+	/*
 	CFileDialog dlgFile(TRUE, NULL, NULL, OFN_HIDEREADONLY, _T("PE文件|*.*||"), NULL);
 	if (dlgFile.DoModal() != IDOK)
 		return;
-	CString strPath = dlgFile.GetPathName();
+	CStringA strPathA(dlgFile.GetPathName());
+	if (strPathA.IsEmpty())
+		return;
 	*/
 
-	CString strPath = TEXT("G:\\code\\WinRecord\\WinT\\dist\\WinT.exe");// 测试代码
+	// 测试代码
+	CStringA strPathA = "G:\\code\\WinRecord\\0003_WinT\\dist\\WinT.exe";// 测试代码
 
-	CStringA strPathA = CStringA(strPath);
-	if (!strPathA.GetLength())
+	char* pBuffer = NULL;
+	int nSize = 0;
+	int result = mGetFileData(strPathA.GetString(), &pBuffer, &nSize);
+	if (result < 0)
 	{
-		MessageBox(_T("文件路径为空"), _T("提示"), MB_OK);
+		AfxMessageBox(TEXT("读取文件失败！"));
 		return;
 	}
 
-	FILE* pFile = NULL;
-	fopen_s(&pFile, strPathA, "rb");
-	if (!pFile)
-	{
-		MessageBox(_T("打开文件失败"), _T("提示"), MB_OK);
-		return;
-	}
-
-	fseek(pFile, 0, SEEK_END);
-	int nSize = ftell(pFile);
-	if (nSize == 0)
-	{
-		MessageBox(_T("文件大小为0"), _T("提示"), MB_OK);
-		return;
-	}
-	fseek(pFile, 0, SEEK_SET);
-
-	char* pBuffer = (char*)calloc(nSize, sizeof(char));
-	if (!pBuffer)
-	{
-		MessageBox(_T("分配内存失败"), _T("提示"), MB_OK);
-		return;
-	}
-
-	int n = fread(pBuffer, 1, nSize, pFile);
-	if (n != nSize)
-	{
-		MessageBox(_T("读取文件失败"), _T("提示"), MB_OK);
-		return;
-	}
-	fclose(pFile);
-
-	CDialogPE* pPE = new CDialogPE(pBuffer, nSize, 0, strPath);
+	CDialogPE* pPE = new CDialogPE(pBuffer, nSize, 0, CString(strPathA));
 	pPE->Create(IDD_DIALOG_PE, this);
 	pPE->ShowWindow(SW_SHOW);
 	pPE->UpdateData(FALSE);
+}
+
+// 拖拽文件 进行PE文件分析
+void CWinTDlg::OnDropFiles(HDROP hDropInfo)
+{
+	// CDialogEx::OnDropFiles(hDropInfo);
+
+	// 1. 获取拖拽的文件总数
+	UINT nFileCount = DragQueryFile(hDropInfo, 0xFFFFFFFF, NULL, 0);
+
+	// 2. 遍历所有拖拽的文件
+	CString strFilePath;
+	for (UINT i = 0; i < nFileCount; i++)
+	{
+		// 获取文件路径
+		DragQueryFile(hDropInfo, i, strFilePath.GetBuffer(MAX_PATH), MAX_PATH); // 这里利用GetBuffer(MAX_PATH)定制缓冲区.
+		strFilePath.ReleaseBuffer(); // 重新计算字符串长度, 注意 不是释放缓冲区,而是让strFilePath可以正常使用
+		if (strFilePath.IsEmpty())
+			continue;
+
+		char* pBuffer = NULL;
+		int nSize = 0;
+		CStringA strPathA(strFilePath);
+		int result = mGetFileData(strPathA.GetString(), &pBuffer, &nSize);
+		if (result < 0)
+			continue;
+
+		CDialogPE* pPE = new CDialogPE(pBuffer, nSize, 0, CString(strPathA));
+		pPE->Create(IDD_DIALOG_PE, this);
+		pPE->ShowWindow(SW_SHOW);
+		pPE->UpdateData(FALSE);
+	}
+
+	// 4. 必须调用：释放拖拽相关资源
+	DragFinish(hDropInfo);
 }

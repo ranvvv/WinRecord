@@ -15,10 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="WinT.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="WinTDlg.h">
+    <ClInclude Include="Sdi.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="framework.h">
@@ -27,54 +24,54 @@
     <ClInclude Include="targetver.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="MainFrm.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="SdiDoc.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="SdiView.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
     <ClInclude Include="Resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="CDialogPE.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="PE.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Common.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="WinT.cpp">
+    <ClCompile Include="Sdi.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="WinTDlg.cpp">
+    <ClCompile Include="MainFrm.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="SdiDoc.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="SdiView.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="CDialogPE.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="PE.c">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Common.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="WinT.rc">
+    <ResourceCompile Include="Sdi.rc">
       <Filter>资源文件</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="res\WinT.rc2">
+    <None Include="res\Sdi.rc2">
       <Filter>资源文件</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="res\WinT.ico">
+    <Image Include="res\SdiDoc.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\Sdi.ico">
       <Filter>资源文件</Filter>
     </Image>
   </ItemGroup>

@@ -91,7 +91,7 @@ static void s1()
 	// GetDeviceCaps(hdc, LOGPIXELSX);		// DPI
 	// int pixels = 16;
 	// int a = (int)((pixels * 72.0) / GetDeviceCaps(hdc,LOGPIXELSY)); // 像素转磅
-	//    1/DPI = x/72  ; 1磅是1/72英寸, DPI是每英寸的像素数
+	// 1/DPI = x/72  ; 1磅是1/72英寸, DPI是每英寸的像素数
 
 
 
@@ -103,7 +103,6 @@ static void s1()
 	SetBkMode(hdc, TRANSPARENT);	// 设置背景模式
 	SetROP2(hdc, R2_XORPEN);	// 设置绘图模式
 	CreateSolidBrush(RGB(255, 0, 0));	// 创建实心画刷
-
 }
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -276,8 +275,8 @@ static void s5(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	HDC hdc = BeginPaint(hwnd, &ps);
 
 	/*
-	窗口: 逻辑画布, 绘图区域
-	视口: 屏幕上的一个矩形区域
+	窗口: 逻辑画布, 绘图区域,无限大
+	视口: 屏幕上的一个矩形区域,一块有限的区域.
 
 	GDI绘图使用的是逻辑单位在逻辑画布("窗口")中绘制, windows将逻辑单位转成设备单位最终在显示器中的某个窗口("视口")上显示.
 	这个转换通过窗口原点,窗口范围,视口原点,视口范围 来完成的.
