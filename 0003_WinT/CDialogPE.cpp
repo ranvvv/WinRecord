@@ -3,6 +3,7 @@
 #include "CDialogPE.h"
 #include "afxdialogex.h"
 #include "PE.h"
+#include "CDialogSection.h"
 
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -15,7 +16,30 @@ IMPLEMENT_DYNAMIC(CDialogPE, CDialogEx)
 
 BEGIN_MESSAGE_MAP(CDialogPE, CDialogEx)
     ON_COMMAND_RANGE(CBUTTON_TABLE_ID_BEGIN, CBUTTON_TABLE_ID_BEGIN + 15, &CDialogPE::OnButtonClickDataDirectory)
+    ON_COMMAND(ID_DLG_PE_MENU_TEST, &CDialogPE::OnDlgPeMenuTest)
+
+    // NM_RCLICK是 右键点击的消息
+    ON_NOTIFY(NM_RCLICK, CLIST_SECTION_ID, OnListCtrlSelectMenu)
+    
+
+    ON_COMMAND(ID_SECTION_MODIFY, &CDialogPE::OnSectionModify)
+    ON_COMMAND(ID_SECTION_ADD, &CDialogPE::OnSectionAdd)
+    ON_COMMAND(ID_TEST_SAVE, &CDialogPE::OnTestSave)
+    ON_COMMAND(ID_SECTION_MERGE, &CDialogPE::OnSectionMerge)
 END_MESSAGE_MAP()
+
+
+// Section控件右键菜单事件处理函数
+void CDialogPE::OnListCtrlSelectMenu(NMHDR* pNMHDR, LRESULT* pResult)
+{
+    CMenu menu;
+    menu.LoadMenu(IDR_MENU_PE_SECTION);
+    CMenu* pPopupMenu = menu.GetSubMenu(0); // 获取第一个子菜单
+
+    CPoint point;
+    GetCursorPos(&point); // 获取当前鼠标位置
+    pPopupMenu->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
+}
 
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -25,7 +49,7 @@ END_MESSAGE_MAP()
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
-CDialogPE::CDialogPE(PCHAR pBuffer, UINT32 length, UINT32 isMemImage, CString path, CWnd* pParent) : CDialogEx(IDD_DIALOG_PE, pParent)
+CDialogPE::CDialogPE(PCHAR pBuffer, UINT32 length, UINT32 isMemImage, CString path, CWnd* pParent) : CDialogEx(IDD_PE_DLG, pParent)
 {
 	this->m_pBuffer = pBuffer;
 	this->m_length = length;
@@ -833,7 +857,7 @@ int CDialogPE::mAnalyzeSectionInfo()
             str.Format(TEXT("0x%08X"), pSec[i].Characteristics);
             m_list_section.SetItemText(n, 6, str);
 
-            m_infoPosition[50 + i].offset = (char*)pSec - p;
+            m_infoPosition[50 + i].offset =(UINT32)((char*)pSec - p);
             m_infoPosition[50 + i].length = sizeof(IMAGE_SECTION_HEADER);
             m_list_section.SetItemData(n, (ULONG_PTR)&m_infoPosition[50 + i]);
         }
@@ -892,6 +916,21 @@ int CDialogPE::mAnalyzePEFile()
         return -1;
 
 
+    return 0;
+}
+
+// 刷新页面信息
+int CDialogPE::mRefreshPage(char* pNewBuffer)
+{
+    if (pNewBuffer)
+    {
+        free(m_pBuffer);
+        m_pBuffer = pNewBuffer;
+        m_length = getPEFileSize(m_pBuffer);
+    }
+
+    mInitItems();
+    mAnalyzePEFile();
     return 0;
 }
 
@@ -955,3 +994,119 @@ void CDialogPE::PostNcDestroy()
 
     delete this;
 }
+
+// 测试按钮
+void CDialogPE::OnDlgPeMenuTest()
+{
+    char* fileBuffer;
+    // fileBuffer = addSection(m_pBuffer, "ttt", 0x2220, 0xE00000E0);
+
+    // fileBuffer = modifySection(m_pBuffer, 9,"zzzz",0x3000, 0xE00000E0);
+    // fileBuffer = modifySection(m_pBuffer, 0,"zzzz",0, 0xE00000E0);
+
+    fileBuffer = mergeSection(m_pBuffer, 0);
+
+    FILE* pf;
+    fopen_s(&pf, "f:\\a.exe", "wb");
+    if (!pf)
+        return;
+    fwrite(fileBuffer, 1,getPEFileSize(fileBuffer), pf);
+    fclose(pf);
+}
+
+// 修改节
+void CDialogPE::OnSectionModify()
+{
+    try {
+        int index = m_list_section.GetNextItem(-1, LVNI_SELECTED);
+        if (index == -1)
+            return;
+
+        PE_VAR_DEFINITION;
+        PE_VAR_ASSIGN(m_pBuffer);
+
+        CString name((char*)pSec[index].Name, 8);
+        CString size, charac;
+        size.Format(TEXT("0x%08X"), pSec[index].SizeOfRawData);
+        charac.Format(TEXT("0x%08X"), pSec[index].Characteristics);
+
+        CDialogSection dlg(1, name, size, charac);
+        INT_PTR result = dlg.DoModal();
+        if (result != IDOK)
+            return;
+
+        CStringA nameA(name);
+        UINT32 size_ = _tcstoul(size, NULL, 16);
+        UINT32 charac_ = _tcstoul(charac, NULL, 16);
+
+        PCHAR pBufferNew = modifySection(m_pBuffer, index, (PCHAR)nameA.GetString(), size_, charac_);
+        if (pBufferNew)
+        {
+            mRefreshPage(pBufferNew);
+        }
+    }
+    catch (...)
+    {
+        AfxMessageBox(TEXT("修改节失败"));
+    }
+}
+
+// 添加节
+void CDialogPE::OnSectionAdd()
+{
+    try {
+        CString name, size, charac;
+
+        CDialogSection dlg(0, name, size, charac);
+        INT_PTR result = dlg.DoModal();
+        if (result != IDOK)
+            return;
+
+        CStringA nameA(name);
+        UINT32 size_ = _tcstoul(size, NULL, 16);
+        UINT32 charac_ = _tcstoul(charac, NULL, 16);
+
+        PCHAR pBufferNew = addSection(m_pBuffer, (PCHAR)nameA.GetString(), size_, charac_);
+        if (pBufferNew)
+            mRefreshPage(pBufferNew);
+    }
+    catch (...)
+    {
+        AfxMessageBox(TEXT("添加节失败"));
+    }
+}
+
+// 合并节
+void CDialogPE::OnSectionMerge()
+{
+    try {
+        int index = m_list_section.GetNextItem(-1, LVNI_SELECTED);
+        if (index == -1)
+            return;
+
+        PCHAR pBufferNew = mergeSection(m_pBuffer, index);
+        if (pBufferNew)
+        {
+            mRefreshPage(pBufferNew);
+        }
+    }
+    catch (...)
+    {
+        AfxMessageBox(TEXT("合并节失败"));
+    }
+
+}
+
+// 保存测试
+void CDialogPE::OnTestSave()
+{
+    FILE* pf;
+    fopen_s(&pf, "f:\\a.exe", "wb");
+    if (!pf)
+        return;
+    fwrite(m_pBuffer, 1, m_length, pf);
+    fclose(pf);
+}
+
+
+

@@ -633,7 +633,7 @@ static DWORD WINAPI ThreadProc_s8_consumer(LPVOID lpParameter)
 
 static DWORD WINAPI ThreadProc_s8_begin(LPVOID lpParameter)
 {
-	DWORD result;
+	//DWORD result;
 	DWORD threadID = 0;
 	g_hSemaphore_Productor_s8 = CreateSemaphore(NULL, 2, 2, NULL);
 	g_hSemaphore_Consumer_s8 = CreateSemaphore(NULL, 0, 2, NULL);

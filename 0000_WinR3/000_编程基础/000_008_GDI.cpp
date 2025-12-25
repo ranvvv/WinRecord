@@ -307,23 +307,41 @@ static void s5(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	GetClientRect(hwnd, &rc);	// 获取客户区坐标
 	DPtoLP(hdc, &pt, 1);		// 设备坐标转换为逻辑坐标
 	LPtoDP(hdc, &pt, 1);		// 逻辑坐标转换为设备坐标
+
+
+	//SetWindowOrgEx(hdc, 30, 30, NULL);		// 设置窗口原点在逻辑矩形中的位置	逻辑单位
+	//SetViewportOrgEx(hdc, 30, 0, NULL);		// 设置视口原点在视口中的位置		像素单位	
 	*/
 
-	// MM_TEXT模式: 
+	// MM_TEXT模式:  理解视口和窗口的关系
 #if 0
 	SetMapMode(hdc, MM_TEXT);
-	SetWindowOrgEx(hdc, 30, 30, NULL);		// 设置窗口原点,逻辑点(30,30)映射到视口原点
-	SetViewportOrgEx(hdc, 50, 50, NULL);	// 设置视口原点为设备像素点(50,50)
-	Rectangle(hdc, 0, 0, 30, 30);
-	// 逻辑点(30,30)映射到视口点(50,50)
+	Rectangle(hdc, 0, 0, 10, 10);
+
+	SetViewportOrgEx(hdc, 10, 10, NULL);	// 视口原点在(10,10)
+	Rectangle(hdc, 0, 0, 10, 10);			// 逻辑(0,0)映射到视口(10,10)
+
+	SetViewportOrgEx(hdc, 20, 20, NULL);	// 视口原点在(20,20)
+	SetWindowOrgEx(hdc, 50, 50, NULL);		// 逻辑原点在(50,50)
+	Rectangle(hdc, 50, 50, 70, 70);			// 逻辑(50,50)映射到视口(70,70)
+
+	SetViewportOrgEx(hdc, 50, 50, NULL);	// 视口原点在(50,50)
+	SetWindowOrgEx(hdc, 50, 50, NULL);		// 逻辑原点在(50,50)
+	Rectangle(hdc, 50, 50, 80, 80);			// 逻辑(50,50)映射到视口(50,50)
+
+
+	SetViewportOrgEx(hdc, 80, 80, NULL);	// 视口原点在(80,80)
+	SetWindowOrgEx(hdc, 0, 0, NULL);		// 逻辑原点在(0,0)
+	Rectangle(hdc, -10, -10, 10, 10);		// 逻辑(0,0)映射到视口(80,80)  所以会回占用一些.
 #endif
 
 
 	// ================================  MM_ISOTROPIC 模式 
-	// MM_ISOTROPIC 能改变坐标转换因子.也就是修改逻辑单位的物理尺寸
-	// MM_ISOTROPIC	  : 逻辑轴上,1x和1y代表相同的物理尺寸
-	// windows会调整视口和窗口的范围,以达到逻辑单位和设备单位的缩放比例相同.
+	// 能改变坐标转换因子.也就是修改逻辑单位对应的物理尺寸.
+	// 在逻辑轴上,1x和1y代表相同的物理尺寸
+
 #if 0
+	// 理解比例关系
 	int cxClient, cyClient;
 	RECT rect;
 	GetClientRect(hwnd, &rect);
@@ -331,10 +349,10 @@ static void s5(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	cyClient = rect.bottom;
 
 	// 理解: MM_ISOTROPIC 模式,和比例关系
-	SetMapMode(hdc, MM_ISOTROPIC);					// 数学坐标系,x和y的单位相同
+	SetMapMode(hdc, MM_ISOTROPIC);				
 
-	SetWindowOrgEx(hdc, 0, 0, NULL);				// 逻辑0,0 映射到视口原点.
-	SetViewportOrgEx(hdc, 100, 100, NULL);			// 设置视口原点为设备像素点(100,300)
+	SetWindowOrgEx(hdc, 0, 0, NULL);				
+	SetViewportOrgEx(hdc, 100, 100, NULL);		
 	SetViewportExtEx(hdc, cxClient / 2, cyClient / 2, NULL);
 	SetWindowExtEx(hdc, cxClient / 2, cyClient / 2, NULL);			// 1:1 	 1逻辑单位等于 1物理像素
 	HBRUSH hBrush = CreateSolidBrush(RGB(255, 255, 0));
@@ -344,7 +362,8 @@ static void s5(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	rect.bottom = -50;
 	FillRect(hdc, &rect, hBrush);
 
-	SetViewportOrgEx(hdc, 100, 300, NULL);					// 设置视口原点为设备像素点(300,300)
+	SetWindowOrgEx(hdc, 0, 0, NULL);						
+	SetViewportOrgEx(hdc, 300, 100, NULL);				
 	SetViewportExtEx(hdc, cxClient, cyClient, NULL);
 	SetWindowExtEx(hdc, cxClient / 2, cyClient / 2, NULL);	// 2:1		1逻辑单位等于2物理像素
 	hBrush = CreateSolidBrush(RGB(255, 0, 0));
@@ -354,7 +373,8 @@ static void s5(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	rect.bottom = -50;
 	FillRect(hdc, &rect, hBrush);
 
-	SetViewportOrgEx(hdc, 300, 300, NULL);
+	SetWindowOrgEx(hdc, 0, 0, NULL);					
+	SetViewportOrgEx(hdc, 500, 100, NULL);
 	SetViewportExtEx(hdc, cxClient, cyClient, NULL);
 	SetWindowExtEx(hdc, 2 * cxClient, 2 * cyClient, NULL);		// 1:2		2逻辑单位等于1物理像素
 	hBrush = CreateSolidBrush(RGB(255, 0, 0));
@@ -365,7 +385,7 @@ static void s5(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	FillRect(hdc, &rect, hBrush);
 #endif 
 
-	// MM_ISOTROPIC 模式, 逻辑单位和设备单位的缩放比例相同. 保证整个逻辑坐标在视口中显示完整.
+	// MM_ISOTROPIC 模式 与 MM_ANISOTROPIC 模式
 #if 0
 	int cxClient, cyClient;
 	RECT rect;
@@ -373,35 +393,14 @@ static void s5(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	cxClient = rect.right;
 	cyClient = rect.bottom;
 
-	SetMapMode(hdc, MM_ISOTROPIC);					// 数学坐标系,x和y的单位相同
+	// 这里2个都试一下就理解了.
+	SetMapMode(hdc, MM_ISOTROPIC);					// x和y的单位相同.  会多出空白区域,  等比例: 逻辑画了个正方形,显示就还是正方形,不会变形
+	//SetMapMode(hdc, MM_ANISOTROPIC);				// x和y的单位不相同  填充整个视口	 不等比: 逻辑画了个正方形,显示区域变动,就会变形成长方形.
 
+	SetViewportOrgEx(hdc, 0, 0, NULL);
+	SetWindowOrgEx(hdc, 0, 0, NULL);
 	SetViewportExtEx(hdc, cxClient, cyClient, NULL);
 	SetWindowExtEx(hdc, 32767, 32767, NULL);		// 1:2		2逻辑单位等于1物理像素
-	SetViewportOrgEx(hdc, 0, 0, NULL);
-	SetWindowOrgEx(hdc, 300, 300, NULL);
-	HBRUSH hBrush = CreateSolidBrush(RGB(255, 0, 0));
-	rect.top = 0;
-	rect.left = 0;
-	rect.right = 32767;
-	rect.bottom = 32767;
-	FillRect(hdc, &rect, hBrush);
-#endif
-
-	// ================================  MM_ANISOTROPIC 模式 
-	// MM_ANISOTROPIC	  : 保证逻辑坐标铺满整个视口.会拉伸逻辑图
-#if 0
-	int cxClient, cyClient;
-	RECT rect;
-	GetClientRect(hwnd, &rect);
-	cxClient = rect.right;
-	cyClient = rect.bottom;
-
-	SetMapMode(hdc, MM_ANISOTROPIC);					// 数学坐标系,x和y的单位相同
-
-	SetViewportExtEx(hdc, cxClient, cyClient, NULL);
-	SetWindowExtEx(hdc, 32767, 32767, NULL);		// 1:2		2逻辑单位等于1物理像素
-	SetViewportOrgEx(hdc, 0, 0, NULL);
-	SetWindowOrgEx(hdc, 300, 300, NULL);
 	HBRUSH hBrush = CreateSolidBrush(RGB(255, 0, 0));
 	rect.top = 0;
 	rect.left = 0;
@@ -421,11 +420,11 @@ static void s5(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 	SetMapMode(hdc, MM_ISOTROPIC);
 
-	SetViewportOrgEx(hdc, cxClient / 2, cyClient / 2, NULL);	//  视口原点设置到窗口正中心
 	SetWindowOrgEx(hdc, 0, 0, NULL);							//  0,0逻辑点映射到视口原点.
+	SetViewportOrgEx(hdc, cxClient / 2, cyClient / 2, NULL);	//  视口原点设置到窗口正中心
 
+	SetWindowExtEx(hdc, cxClient / 2, cyClient / 2, NULL);		// 比例 x 1:1 ,  y 1:-1  变成笛卡尔坐标系
 	SetViewportExtEx(hdc, cxClient / 2, -cyClient / 2, NULL);
-	SetWindowExtEx(hdc, cxClient / 2, cyClient / 2, NULL);		// 比例 x 1:1 ,  y 1:-1 
 
 	HBRUSH hBrush = CreateSolidBrush(RGB(255, 0, 0));
 	rect.top = 50;
@@ -674,7 +673,7 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 	{
 	case WM_PAINT:		// 窗口出现无效区域,就会收到PAINT消息进行重绘,  简单的理解: 需要重绘的时候重绘
 	{
-		s7(hwnd, msg, wParam, lParam);
+		s5(hwnd, msg, wParam, lParam);
 		break;
 	}
 	case WM_CLOSE:

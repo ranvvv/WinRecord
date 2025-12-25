@@ -19,7 +19,7 @@ class CDialogPE : public CDialogEx
 
 	// 对话框数据
 #ifdef AFX_DESIGN_TIME
-	enum { IDD = IDD_DIALOG_PE };
+	enum { IDD = IDD_PE_DLG };
 #endif
 
 
@@ -57,6 +57,14 @@ protected:
 	virtual void OnCancel();
 	virtual void PostNcDestroy();
 	void OnButtonClickDataDirectory(UINT id);
+	void OnListCtrlSelectMenu(NMHDR* pNMHDR, LRESULT* pResult);
+public:
+	afx_msg void OnDlgPeMenuTest();
+	afx_msg void OnSectionModify();
+	int mRefreshPage(char* pNewBuffer = NULL);
+	afx_msg void OnSectionAdd();
+	afx_msg void OnTestSave();
+	afx_msg void OnSectionMerge();
 };
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$

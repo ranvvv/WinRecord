@@ -18,7 +18,7 @@ BEGIN_MESSAGE_MAP(CWinTDlg, CDialogEx)
 END_MESSAGE_MAP()
 
 
-CWinTDlg::CWinTDlg(CWnd* pParent /*=nullptr*/) : CDialogEx(IDD_WINT_DIALOG, pParent)
+CWinTDlg::CWinTDlg(CWnd* pParent /*=nullptr*/) : CDialogEx(IDD_WINT_DLG, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -94,7 +94,7 @@ void CWinTDlg::OnBnClickedButtonPe()
 	}
 
 	CDialogPE* pPE = new CDialogPE(pBuffer, nSize, 0, CString(strPathA));
-	pPE->Create(IDD_DIALOG_PE, this);
+	pPE->Create(IDD_PE_DLG, this);
 	pPE->ShowWindow(SW_SHOW);
 	pPE->UpdateData(FALSE);
 }
@@ -125,7 +125,7 @@ void CWinTDlg::OnDropFiles(HDROP hDropInfo)
 			continue;
 
 		CDialogPE* pPE = new CDialogPE(pBuffer, nSize, 0, CString(strPathA));
-		pPE->Create(IDD_DIALOG_PE, this);
+		pPE->Create(IDD_PE_DLG, this);
 		pPE->ShowWindow(SW_SHOW);
 		pPE->UpdateData(FALSE);
 	}

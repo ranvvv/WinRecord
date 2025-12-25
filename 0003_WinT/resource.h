@@ -2,21 +2,39 @@
 // Microsoft Visual C++ 生成的包含文件。
 // 供 WinT.rc 使用
 //
-#define IDD_WINT_DIALOG                 102
+#define IDD_WINT_DLG                    102
 #define IDR_MAINFRAME                   128
-#define IDD_DIALOG_PE                   130
+#define IDD_PE_DLG                      130
 #define IDR_MENU_DLG_PE                 132
+#define IDR_MENU_PE_SECTION             133
+#define IDD_SECTION_DLG                 134
 #define IDC_BUTTON_PE                   1000
+#define IDC_BUTTON1                     1001
+#define IDC_SECTION_DLG_OK              1001
+#define IDC_SECTION_DLG_NAME            1002
+#define IDC_EDIT2                       1003
+#define IDC_SECTION_DLG_SIZE            1003
+#define IDC_EDIT3                       1005
+#define IDC_SECTION_DLG_CHARAC          1005
 #define ID_32771                        32771
 #define ID_32772                        32772
+#define ID_DLG_PE_MENU_TEST             32773
+#define ID_32774                        32774
+#define ID_32775                        32775
+#define ID_32776                        32776
+#define ID_SECTION_MODIFY               32777
+#define ID_SECTION_MERGE                32778
+#define ID_SECTION_ADD                  32779
+#define ID_32780                        32780
+#define ID_TEST_SAVE                    32781
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        133
-#define _APS_NEXT_COMMAND_VALUE         32773
-#define _APS_NEXT_CONTROL_VALUE         1001
+#define _APS_NEXT_RESOURCE_VALUE        136
+#define _APS_NEXT_COMMAND_VALUE         32782
+#define _APS_NEXT_CONTROL_VALUE         1004
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

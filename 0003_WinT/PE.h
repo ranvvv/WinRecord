@@ -101,6 +101,11 @@ extern "C" {
 	char* fileBufferToImageBuffer(const char* const pBuffer);		// 文件缓冲区到镜像缓冲区的转换
 	char* imageBufferToFileBuffer(const char* const pBuffer);		// 镜像缓冲区到文件缓冲区的转换
 
+	PCHAR addSection(PCHAR pBuffer, PCHAR name, UINT32 size, UINT32 charac);						// 添加节
+	PCHAR modifySection(PCHAR pBuffer, UINT32 index, PCHAR name, UINT32 size, UINT32 charac);		// 修改节
+	PCHAR mergeSection(PCHAR pBuffer, UINT16 index);												// 合并节		
+
+
 #ifdef __cplusplus
 }
 #endif

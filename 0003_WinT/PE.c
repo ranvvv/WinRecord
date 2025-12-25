@@ -1,5 +1,11 @@
 #include "PE.h"
 
+static void test()
+{
+	IMAGE_NT_HEADERS;
+	IMAGE_NT_HEADERS32;
+	IMAGE_NT_HEADERS64;
+}
 
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -160,7 +166,7 @@ UINT32 getPEImageSize(const char* const pBuffer)
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-//	改 : 已处理异常
+//	改
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
@@ -238,3 +244,290 @@ char* imageBufferToFileBuffer(const char* const pBuffer)
 
 	return pNew;
 }
+
+// 文件转换测试
+#if 0
+文件到镜像，再从镜像到文件的测试
+char* pImageBuffer = fileBufferToImageBuffer(m_pBuffer);
+char* pFileBuffer = imageBufferToFileBuffer(pImageBuffer);
+
+FILE* pf;
+fopen_s(&pf, "f:\\a.exe", "wb");
+if (!pf)
+	return;
+fwrite(pFileBuffer, 1,getPEFileSize(pFileBuffer), pf);
+fclose(pf);
+#endif
+
+
+// 添加节
+PCHAR addSection(PCHAR pBuffer, PCHAR name, UINT32 size, UINT32 charac)
+{
+	UINT32 fileSize = 0;
+	UINT32 i = 0;
+	UINT32 newFileSize;
+	UINT32 headerFreeSize = 0;
+	UINT32 moveNtHeader = 0;
+	PCHAR pBegin = NULL;
+	PCHAR pEnd = NULL;
+	PCHAR pCur = NULL;
+	PE_VAR_DEFINITION;
+	NEW_PE_VAR_DEFINITION;
+
+
+	PE_VAR_ASSIGN(pBuffer);
+
+	// 检测头部是否有足够空间写节表
+	pBegin = (PCHAR)(pSec + pNt32->FileHeader.NumberOfSections);
+	pEnd = (PCHAR)(p + pNt32->OptionalHeader.SizeOfHeaders);
+	pCur = pBegin;
+	while (pCur < pEnd)
+	{
+		if (*pCur)
+			break;
+		pCur++;
+		headerFreeSize++;
+	}
+
+	// 空间不足，移动NT头
+	if (headerFreeSize < sizeof(IMAGE_SECTION_HEADER))
+	{
+		moveNtHeader = 1;
+		headerFreeSize += pDos->e_lfanew - sizeof(IMAGE_DOS_HEADER);
+		// 移动之后还是不够,那就没办法了.
+		if (headerFreeSize < sizeof(IMAGE_SECTION_HEADER))
+			return NULL;
+	}
+
+	// 获取文件大小
+	fileSize = getPEFileSize(p);
+	if (!fileSize)
+		return NULL;
+
+	// 新文件大小，对齐处理
+	newFileSize = (UINT32)fileAlignment(p, fileSize + size);
+
+	pNew = mAllocBuffer(newFileSize);
+	if (!pNew)
+		return NULL;
+
+	// 头拷贝
+	memcpy(pNew, p, pNt32->OptionalHeader.SizeOfHeaders);
+
+	// 节拷贝
+	for (i = 0; i < pNt32->FileHeader.NumberOfSections; i++)
+	{
+		if (pSec[i].PointerToRawData)
+			memcpy(pNew + pSec[i].PointerToRawData, p + pSec[i].PointerToRawData, pSec[i].SizeOfRawData);
+	}
+
+	// 移动NT头紧邻DOS头,并清空原来的空间
+	if (moveNtHeader)
+	{
+		NEW_PE_VAR_ASSIGN(pNew);
+
+		pBegin = (PCHAR)pNt32New;
+		pEnd = (PCHAR)(pSecNew + pNt32New->FileHeader.NumberOfSections);
+		pCur = pNew + sizeof(IMAGE_DOS_HEADER);
+		while (pBegin < pEnd)
+		{
+			*pCur++ = *pBegin;
+			*pBegin++ = 0;
+		}
+		pDosNew->e_lfanew = sizeof(IMAGE_DOS_HEADER);
+	}
+
+	NEW_PE_VAR_ASSIGN(pNew);
+
+	// 新节表
+	pSecNew[pNt32New->FileHeader.NumberOfSections].PointerToRawData = getPEFileSize(p);;
+	pSecNew[pNt32New->FileHeader.NumberOfSections].SizeOfRawData = (UINT32)fileAlignment(pNew, size);
+	pSecNew[pNt32New->FileHeader.NumberOfSections].VirtualAddress = getPEImageSize(p);
+	pSecNew[pNt32New->FileHeader.NumberOfSections].Misc.VirtualSize = (UINT32)sectionAlignment(pNew, size);
+	pSecNew[pNt32New->FileHeader.NumberOfSections].Characteristics = charac;
+	strncpy_s((PCHAR)pSecNew[pNt32New->FileHeader.NumberOfSections].Name, 8, name, _TRUNCATE);
+
+	// 节计数++
+	pNt32New->FileHeader.NumberOfSections++;
+
+	// 镜像大小修正
+	pNt32New->OptionalHeader.SizeOfImage = getPEImageSize(pNew);
+
+	return pNew;
+}
+
+// 修改节
+PCHAR modifySection(PCHAR pBuffer, UINT32 index, PCHAR name, UINT32 size, UINT32 charac)
+{
+	PE_VAR_DEFINITION;
+	NEW_PE_VAR_DEFINITION;
+
+	UINT32 fileSize = 0;
+	UINT32 newFileSize;
+	UINT32 i = 0;
+	UINT32 modifySecSize = 0;
+
+	PE_VAR_ASSIGN(pBuffer);
+
+	fileSize = getPEFileSize(p);
+	if (!fileSize)
+		return NULL;
+
+	if (size && pSec[index].SizeOfRawData != size)
+	{
+		// 只有最后一个节可以修改大小,且大小不能小于当前
+		if (index != (UINT32)pNt32->FileHeader.NumberOfSections - 1 || pSec[index].SizeOfRawData > size)
+			return NULL;
+		newFileSize = (UINT32)fileAlignment(p, pSec[index].PointerToRawData + size);
+		modifySecSize = 1;
+	}
+	else
+		newFileSize = fileSize;
+
+	pNew = mAllocBuffer(newFileSize);
+	if (!pNew)
+		return NULL;
+
+	// 头拷贝
+	memcpy(pNew, p, pNt32->OptionalHeader.SizeOfHeaders);
+
+	// 节拷贝
+	for (i = 0; i < pNt32->FileHeader.NumberOfSections; i++)
+	{
+		if (pSec[i].PointerToRawData)
+			memcpy(pNew + pSec[i].PointerToRawData, p + pSec[i].PointerToRawData, pSec[i].SizeOfRawData);
+	}
+
+	NEW_PE_VAR_ASSIGN(pNew);
+
+	if (modifySecSize)
+	{
+		pSecNew[index].SizeOfRawData = (UINT32)fileAlignment(pNew, size);
+		pSecNew[index].Misc.VirtualSize = (UINT32)sectionAlignment(pNew, size);
+		pNt32New->OptionalHeader.SizeOfImage = getPEImageSize(pNew);
+	}
+	strncpy_s((PCHAR)pSecNew[index].Name, 8, name, _TRUNCATE);
+	pSecNew[index].Characteristics = charac;
+
+	return pNew;
+}
+
+// 合并节
+PCHAR mergeSection(PCHAR pBuffer, UINT16 index)
+{
+	PE_VAR_DEFINITION;
+	NEW_PE_VAR_DEFINITION;
+	WORD i = 0;
+	UINT32 pointerToRawData = 0;	// 合并后节的起始偏移
+	UINT32 virtualAddress = 0;		// 合并后节的起始虚拟地址
+	UINT32 lastVirtualAddress = 0;	// 最后一个有虚拟地址的节
+	UINT32 lastSizeOfRawData = 0;	// 最后一个有虚拟地址的节
+
+	UINT32 sizeOfNewSection = 0;	// 新节的大小
+
+	PE_VAR_ASSIGN(pBuffer);
+
+	pointerToRawData = pSec[index].PointerToRawData;
+	if (pSec[index].PointerToRawData == 0)
+	{
+		for (i = index; i < pNt32->FileHeader.NumberOfSections; i++)
+		{
+			if (pSec[i].PointerToRawData)
+			{
+				pointerToRawData = pSec[i].PointerToRawData;
+				break;
+			}
+		}
+		if(pointerToRawData == 0)
+			return NULL;
+	}
+
+	virtualAddress = pSec[index].VirtualAddress;
+	if (pSec[index].VirtualAddress == 0)
+	{
+		for (i = index; i < pNt32->FileHeader.NumberOfSections; i++)
+		{
+			if (pSec[i].VirtualAddress)
+			{
+				virtualAddress = pSec[i].VirtualAddress;
+				break;
+			}
+		}
+		if(virtualAddress == 0)
+			return NULL;
+	}
+
+
+	for (i = index; i < pNt32->FileHeader.NumberOfSections; i++)
+	{
+		if (pSec[i].VirtualAddress)
+		{
+			lastVirtualAddress = pSec[i].VirtualAddress;
+			lastSizeOfRawData = pSec[i].SizeOfRawData;
+		}
+	}
+	if (lastVirtualAddress == 0)
+		return NULL;
+
+	sizeOfNewSection = (UINT32)fileAlignment(p, lastVirtualAddress - virtualAddress + lastSizeOfRawData);
+
+	pNew = mAllocBuffer(pointerToRawData + sizeOfNewSection);
+	if (!pNew)
+		return NULL;
+
+	// 拷贝第一个节之前的数据
+	memcpy(pNew,p,pointerToRawData);
+
+	// 拷贝后续
+	for (i = index; i < pNt32->FileHeader.NumberOfSections; i++)
+	{
+		// 这个节在文件中存在
+		if (pSec[i].PointerToRawData && pSec[i].SizeOfRawData)
+		{
+			// 有虚拟地址,就要往拉伸后的虚拟地址位置拷贝
+			if (pSec[i].VirtualAddress)
+				memcpy(pNew + pointerToRawData + pSec[i].VirtualAddress - virtualAddress, p + pSec[i].PointerToRawData, pSec[i].SizeOfRawData);
+			else // 没有虚拟地址,那就是文件数据,就要拷到原来的位置去
+				memcpy(pNew + pSec[i].PointerToRawData , p + pSec[i].PointerToRawData, pSec[i].SizeOfRawData);
+		}
+	}
+	
+	NEW_PE_VAR_ASSIGN(pNew);
+
+
+	pSecNew[index].PointerToRawData = pointerToRawData;
+	pSecNew[index].SizeOfRawData = (UINT32)fileAlignment(p, sizeOfNewSection);
+
+	pSecNew[index].VirtualAddress = virtualAddress;
+	pSecNew[index].Misc.VirtualSize = (UINT32)sectionAlignment(p, sizeOfNewSection);
+	pSecNew[index].Characteristics = 0xE00000E0;
+	strncpy_s((PCHAR)pSecNew[index].Name, 8, ".mergeSec", _TRUNCATE);
+
+	for (i = index + 1; i < pNt32->FileHeader.NumberOfSections; i++)
+		memset(pSecNew + i, 0, sizeof(IMAGE_SECTION_HEADER));
+
+	pNt32New->FileHeader.NumberOfSections = index + 1;
+	pNt32New->OptionalHeader.SizeOfImage = getPEImageSize(pNew);
+
+	return pNew;
+}
+
+// 节修改测试
+#if 0
+char* fileBuffer;
+// fileBuffer = addSection(m_pBuffer, "ttt", 0x2220, 0xE00000E0);
+
+// fileBuffer = modifySection(m_pBuffer, 9,"zzzz",0x3000, 0xE00000E0);
+// fileBuffer = modifySection(m_pBuffer, 0,"zzzz",0, 0xE00000E0);
+
+fileBuffer = mergeSection(m_pBuffer, 0);
+
+FILE* pf;
+fopen_s(&pf, "f:\\a.exe", "wb");
+if (!pf)
+return;
+fwrite(fileBuffer, 1, getPEFileSize(fileBuffer), pf);
+fclose(pf);
+#endif
+
+
