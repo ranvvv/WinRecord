@@ -4,13 +4,13 @@
 // 获取文件数据
 int mGetFileData(const char* path, char** ppBuffer, int* pSize)
 {
-/**
- * @brief				获取文件数据
- * @param path			文件路径
- * @param ppBuffer		返回文件数据指针
- * @param pSize			返回文件大小
- * @return				成功返回0，失败返回错误码: -1:参数错误, -2:打开文件失败, -3:获取大小失败, -4:分配内存失败, -5:读取数据失败
-*/
+	/**
+	 * @brief				获取文件数据
+	 * @param path			文件路径
+	 * @param ppBuffer		返回文件数据指针
+	 * @param pSize			返回文件大小
+	 * @return				成功返回0，失败返回错误码: -1:参数错误, -2:打开文件失败, -3:获取大小失败, -4:分配内存失败, -5:读取数据失败
+	*/
 
 	if( path == NULL || ppBuffer == NULL || pSize == NULL || strlen(path) == 0)
 		return -1;

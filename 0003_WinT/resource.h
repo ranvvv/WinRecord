@@ -9,23 +9,14 @@
 #define IDR_MENU_PE_SECTION             133
 #define IDD_SECTION_DLG                 134
 #define IDC_BUTTON_PE                   1000
-#define IDC_BUTTON1                     1001
 #define IDC_SECTION_DLG_OK              1001
 #define IDC_SECTION_DLG_NAME            1002
-#define IDC_EDIT2                       1003
 #define IDC_SECTION_DLG_SIZE            1003
-#define IDC_EDIT3                       1005
 #define IDC_SECTION_DLG_CHARAC          1005
-#define ID_32771                        32771
-#define ID_32772                        32772
 #define ID_DLG_PE_MENU_TEST             32773
-#define ID_32774                        32774
-#define ID_32775                        32775
-#define ID_32776                        32776
 #define ID_SECTION_MODIFY               32777
 #define ID_SECTION_MERGE                32778
 #define ID_SECTION_ADD                  32779
-#define ID_32780                        32780
 #define ID_TEST_SAVE                    32781
 
 // Next default values for new objects

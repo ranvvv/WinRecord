@@ -25,6 +25,7 @@ IMPLEMENT_DYNCREATE(CTestView, CView)
 BEGIN_MESSAGE_MAP(CTestView, CView)
 	ON_WM_PAINT()
 	ON_WM_LBUTTONDOWN()
+	ON_WM_MOUSEMOVE()
 END_MESSAGE_MAP()
 
 // CTestView 构造/析构
@@ -82,40 +83,79 @@ CTestDoc* CTestView::GetDocument() const // 非调试版本是内联的
 
 
 // CTestView 消息处理程序
-
+static int b_inbutton = 0;
 
 void CTestView::OnPaint()
 {
-	// win32 API 实现绘图
-#if 0
-	PAINTSTRUCT ps;
-	HDC hdc = ::GetDC(m_hWnd);
-	::BeginPaint(m_hWnd, &ps);
-	::DrawText(hdc, _T("Hello world!"), -1, CRect(10, 10, 200, 50), DT_SINGLELINE);
-	::EndPaint(m_hWnd, &ps);
-#endif
+	CPaintDC dc(this); // device context for painting
 
-	// MFC 实现绘图
-	CPaintDC dc(this); 
-	dc.SetBkColor(RGB(255, 0, 0));	// 设置dc的背景色
-	dc.DrawText(_T("Hello world!"),CRect(100, 100, 200, 200), DT_SINGLELINE);
+	// 设置线条颜色和宽度
+	CPen pen(PS_SOLID, 2, RGB(0, 255, 0));
+	CPen* oldPen;
+	oldPen = dc.SelectObject(&pen);
+
+
+	// 画线
+	dc.MoveTo(10, 10);
+	dc.LineTo(10, 30);
+	dc.LineTo(30, 50);
+
+	// 点连接
+	POINT pt[5] =  {
+		{40,40},
+		{100,40},
+		 {100,100},
+		 {40,100},
+		{40,40}
+	};
+	dc.Polygon(pt, 5);
+
+	// 椭圆
+	dc.Ellipse(100, 100, 200, 200);
+
+	// 画矩形
+	dc.Rectangle(200, 100, 300, 200);
+
+	// 填充矩形
+	dc.FillRect(&CRect(300, 100, 400, 200), &CBrush(RGB(255, 0, 0)));
+
+	// 画3D矩形边框
+	CRect rect(500, 100, 600, 150);
+	if (b_inbutton)
+		dc.FillRect(&rect, &CBrush(RGB(0, 255, 0)));
+	else
+		dc.FillRect(&rect, &CBrush(RGB(255, 0, 0)));
+	dc.Draw3dRect(&rect, RGB(255, 255, 255), RGB(128, 128, 128)); // 左上颜色, 右下颜色  分开设置 ,形成类似3D效果
+	dc.SetBkMode(TRANSPARENT);	// 透明背景
+	dc.DrawText(L"Hello, MFC!", &rect, DT_CENTER | DT_VCENTER);// 给按钮画文字
+	dc.TextOut(500, 120, L"Hello, MFC!");	// 画文字
+
+	
+	dc.SelectObject(oldPen);	// 恢复原来的画笔
 }
 
 
 void CTestView::OnLButtonDown(UINT nFlags, CPoint point)
 {
-	CView::OnLButtonDown(nFlags, point);
 
-	// win32 API 实现绘图
-#if 0
-	HDC hdc = ::GetDC(m_hWnd);
-	::Ellipse(hdc, point.x - 10, point.y - 10, point.x + 10, point.y + 10);
-	::ReleaseDC(m_hWnd, hdc);
-#endif
+	if(CRect(500, 100, 600, 200).PtInRect(point))
+	{
+		MessageBox(L"恭喜你，按到了按钮！");
+	}
 
-	//CClientDC dc(this);	// 当前窗口的DC
-	CWindowDC dc(NULL);	// 可以画在任意窗口上,包括桌面
-	dc.Ellipse(point.x - 10, point.y - 10, point.x + 10, point.y + 10);
+}
 
+// 鼠标进入按钮切换颜色的实现.
+void CTestView::OnMouseMove(UINT nFlags, CPoint point)
+{
+	int b_inbutton_pre = b_inbutton;
+	if (CRect(500, 100, 600, 150).PtInRect(point))
+		b_inbutton = 1;
+	else
+		b_inbutton = 0;
 
+	if (b_inbutton_pre != b_inbutton)
+		Invalidate();
+
+	CView::OnMouseMove(nFlags, point);
 }

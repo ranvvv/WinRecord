@@ -2,7 +2,7 @@
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-// PE 分析界面
+// PE分析对话框类
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
@@ -14,20 +14,19 @@ struct INFO_POSITION {
 
 class CDialogPE : public CDialogEx
 {
-	DECLARE_DYNAMIC(CDialogPE)
-	DECLARE_MESSAGE_MAP()
-
-	// 对话框数据
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_PE_DLG };
 #endif
 
+	DECLARE_DYNAMIC(CDialogPE)
+	DECLARE_MESSAGE_MAP()
 
 private:
 	PCHAR m_pBuffer;					// 缓冲区指针
 	UINT32 m_length;					// 缓冲区长度
 	UINT32 m_isMemImage;				// 是否内存镜像
 	CString m_path;						// 文件路径
+	BOOL m_isDirty;						// 是否修改过
 
 	CMenu m_menu;						// 主菜单
 	CStatic m_static_path;				// 路径 静态文本框
@@ -39,32 +38,56 @@ private:
 
 	INFO_POSITION m_infoPosition[100];	// 用来存储信息的位置和长度,方便在hex中高亮显示,0-50 用于header,50-80 用于section,80-100 未使用
 
+	UINT32 m_showFlag;					// 显示标志: 0:CEditText,1:Hex
+	#define MAX_SHOW_FLAG 2				// 显示标志最大值
+	INT32 m_hexBegin;					// hex显示的起始位置
+	INT32 m_hexBeginWithBkColor;		// hex显示的起始位置,带背景色
+	INT32 m_hexLengthWithBkColor;		// hex显示的结束位置,带背景色
+	UINT32 m_hexColor;					// hex显示的背景色	
+	UINT32 m_hexFontSize;				// hex显示的字体大小
+	CRect m_hexRect;					// hex显示的矩形区域
+	UINT32 m_hexModifyCursor;			// hex显示的当前修改位置
+	UINT32 m_defaultBkColor;			// 默认背景色
+	CScrollBar m_scrollbar_hex;			// hex显示的滚动条
+	
+
 
 public:
 	CDialogPE(PCHAR pBuffer,UINT32 length,UINT32 isMemImage = 0, CString path = TEXT(""), CWnd* pParent = nullptr);   // 标准构造函数
 	virtual ~CDialogPE();
 
+
 public:
-	int mCreateItems();
-	int mInitItems();
-	int mAnalyzePEFile();
-	int mAnalyzeHeaderInfo();
-	int mAnalyzeSectionInfo();
-	int mAnalyzeTableInfo();
+	int mCreateItems();				// 创建控件
+	int mInitItems();				// 初始化控件
+	int mAnalyzeHeaderInfo();		// 分析header信息
+	int mAnalyzeSectionInfo();		// 分析section信息
+	int mAnalyzeTableInfo();		// 分析table信息
+	int mAnalyzePEFile();			// 分析PE文件信息 : 分析header,section,table信息
+	int mRefreshPage(char* pNewBuffer = NULL);  // 刷新页面,可更新缓冲区
+	int mSwitchShowFlag(int showFlag);
+	int mDrawHex(CPaintDC* pDc);
+	int mPixelsToPoints(CDC* pDc, int pixels);
+	int mSetScrollBarHex();
+	UINT32 mGetHexPageRange();
 
 protected:
-	virtual BOOL OnInitDialog();
-	virtual void OnCancel();
-	virtual void PostNcDestroy();
-	void OnButtonClickDataDirectory(UINT id);
-	void OnListCtrlSelectMenu(NMHDR* pNMHDR, LRESULT* pResult);
-public:
+	afx_msg virtual BOOL OnInitDialog();
+	afx_msg virtual void OnCancel();
+	afx_msg virtual void PostNcDestroy();
+	afx_msg void OnButtonClickDataDirectory(UINT id);
+	afx_msg void OnListCtrlSelectMenu(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnDlgPeMenuTest();
 	afx_msg void OnSectionModify();
-	int mRefreshPage(char* pNewBuffer = NULL);
 	afx_msg void OnSectionAdd();
 	afx_msg void OnTestSave();
 	afx_msg void OnSectionMerge();
+	afx_msg void OnPaint();
+	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
+public:
+	int mSetHexBegin(int hexBegin);
+	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 };
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -104,3 +127,8 @@ public:
 #define CEDIT_TEXT_ID 1031
 
 
+// HEX 属性定义
+#define LEFT_HEX_ADDR_CHAR_NUM 9	// 左边地址显示占用的字符数
+#define CSCROLLBAR_HEX_V_ID 1032
+#define CSCROLLBAR_HEX_V_WIDTH 15
+#define CSCROLLBAR_HEX_H_ID 1033
