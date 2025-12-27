@@ -4,6 +4,7 @@
 #include "afxdialogex.h"
 #include "PE.h"
 #include "CDialogSection.h"
+#include "CDialogInput.h"
 
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -19,7 +20,6 @@ BEGIN_MESSAGE_MAP(CDialogPE, CDialogEx)
     ON_COMMAND_RANGE(CBUTTON_TABLE_ID_BEGIN, CBUTTON_TABLE_ID_BEGIN + 15, &CDialogPE::OnButtonClickDataDirectory)
     // CListCtrl Section控件 : 右键点击
     ON_NOTIFY(NM_RCLICK, CLIST_SECTION_ID, OnListCtrlSelectMenu)
-
     // 菜单项: 修改节
     ON_COMMAND(ID_SECTION_MODIFY, &CDialogPE::OnSectionModify)
     // 菜单项: 添加节
@@ -36,8 +36,12 @@ BEGIN_MESSAGE_MAP(CDialogPE, CDialogEx)
     ON_WM_MOUSEHWHEEL()
     // 混动条
     ON_WM_VSCROLL()
+    // 鼠标滚轮滚动
     ON_WM_MOUSEWHEEL()
+    // 擦除背景
     ON_WM_ERASEBKGND()
+    // 快捷键: 跳转到
+    ON_COMMAND(ID_HEX_GOTO, &CDialogPE::OnHexGoto)
 END_MESSAGE_MAP()
 
 
@@ -58,13 +62,14 @@ CDialogPE::CDialogPE(PCHAR pBuffer, UINT32 length, UINT32 isMemImage, CString pa
 	m_path = path;
     m_isDirty = FALSE;
 
+    m_hexRect.SetRect(0, 0, 0, 0);
+
     m_showFlag = 1;
     m_hexBegin = 0;
     m_hexBeginWithBkColor = 0;
     m_hexLengthWithBkColor = 0;
     m_hexColor = RGB( 255,0 ,0);
-    m_hexFontSize = 12;
-    m_hexRect.SetRect(0, 0, 0, 0);
+    m_hexFontSize = 15;
     m_hexModifyCursor = 0;
     m_defaultBkColor = RGB(255, 255, 255);
 }
@@ -75,6 +80,21 @@ CDialogPE::~CDialogPE()
     if (m_pBuffer)
         free(m_pBuffer);
 }
+
+BOOL CDialogPE::PreTranslateMessage(MSG* pMsg)
+{
+    // 处理加速键
+    if (m_hAccelTable != NULL)
+    {
+        if (::TranslateAccelerator(m_hWnd, m_hAccelTable, pMsg))
+        {
+            return TRUE;
+        }
+    }
+
+    return CDialogEx::PreTranslateMessage(pMsg);
+}
+
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
@@ -90,11 +110,11 @@ int CDialogPE::mCreateItems()
     LONG lStyle;
     int left = 0, top = 0, right = 0, bottom = 0;
 
-    // 加载菜单
+    // CMenu  主菜单
     m_menu.LoadMenu(IDR_MENU_DLG_PE);
     SetMenu(&m_menu);
 
-    // 创建 STATIC 控件 path
+    // 创建 CStatic 控件 path
     left = MARGIN_COMMON;
     top = MARGIN_COMMON;
     right = left + CSTATIC_PATH_WIDTH;
@@ -104,7 +124,7 @@ int CDialogPE::mCreateItems()
     if (!bCreate)
         return -1;
 
-    // 创建 EDIT 控件 path
+    // 创建 CEdit 控件 path
     left = right + MARGIN_COMMON;
     right = MARGIN_COMMON + HALF_WIDTH;
     dwStyle = WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY;
@@ -112,7 +132,7 @@ int CDialogPE::mCreateItems()
     if (!bCreate)
         return -1;
 
-    // 创建 TREE 控件 header
+    // 创建 CTreeCtrl 控件 header
     top = bottom + MARGIN_COMMON;
     left = MARGIN_COMMON;
     right = left + HALF_WIDTH;
@@ -122,7 +142,7 @@ int CDialogPE::mCreateItems()
     if (!bCreate)
         return -1;
 
-    // 创建 LIST 控件 section
+    // 创建 CListCtrl 控件 section
     top = bottom + MARGIN_COMMON;
     left = MARGIN_COMMON;
     right = left + HALF_WIDTH;
@@ -152,7 +172,7 @@ int CDialogPE::mCreateItems()
     m_list_section.InsertColumn(5, _T("文件基址"), LVCFMT_LEFT, 90);
     m_list_section.InsertColumn(6, _T("属性"), LVCFMT_LEFT, 90);
 
-    // 创建 BUTTON 控件 table
+    // 创建 CButton 控件 table
     dwStyle = WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON;
     for (int i = 0; i < 4; ++i)
     {
@@ -167,39 +187,6 @@ int CDialogPE::mCreateItems()
                 return -1;
         }
     }
-
-    // 创建 EDIT 控件 text 用来显示文本信息
-    top = MARGIN_COMMON;
-    left = MARGIN_COMMON + HALF_WIDTH + MARGIN_COMMON;
-    right = left + HALF_WIDTH;
-    m_hexRect.SetRect(left, top, right, bottom);
-    dwStyle = WS_HSCROLL | WS_VSCROLL | WS_CHILD | ES_READONLY | ES_MULTILINE | WS_BORDER | WS_VISIBLE | ES_AUTOHSCROLL;
-    m_edit_text.Create(dwStyle, m_hexRect , this, CEDIT_TEXT_ID);
-
-    // 创建滚动条控件
-    left = right;
-    right = left + CSCROLLBAR_HEX_V_WIDTH;
-    dwStyle = WS_CHILD | WS_VISIBLE | SBS_VERT;
-    m_scrollbar_hex.Create(dwStyle, CRect(left, top, right, bottom), this, CSCROLLBAR_HEX_V_ID);
-
-
-    return 0;
-}
-
-// 初始化控件
-int CDialogPE::mInitItems()
-{
-    m_edit_path.SetWindowText(TEXT(""));
-    m_edit_path.EnableWindow(FALSE);
-    m_tree_header.DeleteAllItems();
-    m_tree_header.EnableWindow(FALSE);
-    m_list_section.DeleteAllItems();
-    m_list_section.EnableWindow(FALSE);
-
-    PTCHAR name = NULL;
-    for (int i = 0; i < 16; ++i)
-        m_button_table[i].EnableWindow(FALSE);
-
     m_button_table[0].SetWindowText(TEXT("导出表"));
     m_button_table[1].SetWindowText(TEXT("导入表"));
     m_button_table[2].SetWindowText(TEXT("资源表"));
@@ -217,11 +204,68 @@ int CDialogPE::mInitItems()
     m_button_table[14].SetWindowText(TEXT("COM信息表"));
     m_button_table[15].SetWindowText(TEXT("保留"));
 
-    if (m_showFlag != 0)
-        m_edit_text.ShowWindow(FALSE);
+    // 创建 CEdit 控件 text 用来显示文本信息
+    top = MARGIN_COMMON;
+    left = MARGIN_COMMON + HALF_WIDTH + MARGIN_COMMON;
+    right = left + HALF_WIDTH;
+    m_hexRect.SetRect(left, top, right, bottom);
+    dwStyle = WS_HSCROLL | WS_VSCROLL | WS_CHILD | ES_READONLY | ES_MULTILINE | WS_BORDER | WS_VISIBLE | ES_AUTOHSCROLL;
+    bCreate = m_edit_text.Create(dwStyle, m_hexRect , this, CEDIT_TEXT_ID);
+    if (!bCreate)
+        return -1;
 
+    // 创建CScrollBar hex 滚动条控件
+    left = right;
+    right = left + CSCROLLBAR_HEX_V_WIDTH;
+    dwStyle = WS_CHILD | WS_VISIBLE | SBS_VERT;
+    bCreate = m_scrollbar_hex.Create(dwStyle, CRect(left, top, right, bottom), this, CSCROLLBAR_HEX_V_ID);
+    if (!bCreate)
+        return -1;
+
+    // 创建CEdit 底部状态栏控件
+    top = bottom + MARGIN_COMMON;
+    bottom = top + CEDIT_BOTTOM_INFO_HEIGHT;
+    left = 0;
+    dwStyle = WS_CHILD | ES_READONLY | WS_BORDER | WS_VISIBLE;
+    bCreate = m_edit_bottomInfo.Create(dwStyle, CRect(left, top, right, bottom), this, CEDIT_BOTTOM_INFO_ID);
+    if (!bCreate)
+        return -1;
+
+    return 0;
+}
+
+// 初始化控件
+int CDialogPE::mInitItems()
+{
+    // CEdit 控件 path
+    m_edit_path.SetWindowText(TEXT(""));
+    m_edit_path.EnableWindow(FALSE);
+
+    // CTreeCtrl 控件 header
+    m_tree_header.DeleteAllItems();
+    m_tree_header.EnableWindow(FALSE);
+
+    // CListCtrl 控件 section
+    m_list_section.DeleteAllItems();
+    m_list_section.EnableWindow(FALSE);
+
+    // CButton 控件 table
+    for (int i = 0; i < 16; ++i)
+        m_button_table[i].EnableWindow(FALSE);
+
+    // CEdit 控件 text
+    m_edit_text.SetWindowText(TEXT(""));
+    m_edit_text.ShowWindow(m_showFlag == 0);
+    m_edit_text.EnableWindow(FALSE);
+
+    // CScrollBar 控件 hex
     m_scrollbar_hex.ShowWindow(m_showFlag == 1);
+    m_scrollbar_hex.EnableWindow(FALSE);
     mSetScrollBarHex();
+
+    // CEdit 控件 bottomInfo
+    m_edit_bottomInfo.SetWindowText(TEXT(""));
+    m_edit_bottomInfo.EnableWindow(FALSE);
 
     return 0;
 }
@@ -237,14 +281,17 @@ int CDialogPE::mAnalyzeHeaderInfo()
         UINT32 offset = 0;
 
         m_tree_header.EnableWindow(TRUE);
-        HTREEITEM hChild = NULL;
+
+        HTREEITEM hRoot = NULL;                 // 根节点
         HTREEITEM hFileHeader = NULL;
         HTREEITEM hOptionalHeader = NULL;
+
+        HTREEITEM hChild = NULL;
 
         offset = pDos->e_lfanew;
 
         // NT_HEADER
-        HTREEITEM hRoot = m_tree_header.InsertItem(_T("NT_HEADER"));
+        hRoot = m_tree_header.InsertItem(_T("IMAGE_NT_HEADER"));
         m_infoPosition[0].offset = offset;
         m_infoPosition[0].length = sizeof(pNt32->Signature) + sizeof(pNt32->FileHeader) + pNt32->FileHeader.SizeOfOptionalHeader;
         m_tree_header.SetItemData(hRoot, (ULONG_PTR)&m_infoPosition[0]);
@@ -259,7 +306,7 @@ int CDialogPE::mAnalyzeHeaderInfo()
 
         // ------------------------  FILE_HEADER 
 
-        hFileHeader = m_tree_header.InsertItem(_T("FILE_HEADER"), hRoot);
+        hFileHeader = m_tree_header.InsertItem(_T("IMAGE_FILE_HEADER"), hRoot);
         m_infoPosition[2].offset = offset;
         m_infoPosition[2].length = sizeof(pNt32->FileHeader);
         m_tree_header.SetItemData(hFileHeader, (ULONG_PTR)&m_infoPosition[2]);
@@ -328,7 +375,7 @@ int CDialogPE::mAnalyzeHeaderInfo()
         // OPTIONAL_HEADER
         if (isX64(p))
         {
-            hOptionalHeader = m_tree_header.InsertItem(_T("OPTIONAL_HEADER64"), hRoot);
+            hOptionalHeader = m_tree_header.InsertItem(_T("IMAGE_OPTIONAL_HEADER64"), hRoot);
             m_infoPosition[10].offset = offset;
             m_infoPosition[10].length = pNt64->FileHeader.SizeOfOptionalHeader;
             m_tree_header.SetItemData(hOptionalHeader, (ULONG_PTR)&m_infoPosition[10]);
@@ -495,14 +542,14 @@ int CDialogPE::mAnalyzeHeaderInfo()
             m_tree_header.SetItemData(hChild, (ULONG_PTR)&m_infoPosition[28]);
             offset += sizeof(pNt64->OptionalHeader.Win32VersionValue);
 
-            str.Format(TEXT("SizeOfImage: 0x%I64X"), pNt64->OptionalHeader.SizeOfImage);
+            str.Format(TEXT("SizeOfImage: 0x%08X"), pNt64->OptionalHeader.SizeOfImage);
             hChild = m_tree_header.InsertItem(str, hOptionalHeader);
             m_infoPosition[29].offset = offset;
             m_infoPosition[29].length = sizeof(pNt64->OptionalHeader.SizeOfImage);
             m_tree_header.SetItemData(hChild, (ULONG_PTR)&m_infoPosition[29]);
             offset += sizeof(pNt64->OptionalHeader.SizeOfImage);
 
-            str.Format(TEXT("SizeOfHeaders: 0x%I64X"), pNt64->OptionalHeader.SizeOfHeaders);
+            str.Format(TEXT("SizeOfHeaders: 0x%08X"), pNt64->OptionalHeader.SizeOfHeaders);
             hChild = m_tree_header.InsertItem(str, hOptionalHeader);
             m_infoPosition[30].offset = offset;
             m_infoPosition[30].length = sizeof(pNt64->OptionalHeader.SizeOfHeaders);
@@ -575,7 +622,7 @@ int CDialogPE::mAnalyzeHeaderInfo()
         else
         {
 
-            hOptionalHeader = m_tree_header.InsertItem(_T("OPTIONAL_HEADER32"), hRoot);
+            hOptionalHeader = m_tree_header.InsertItem(_T("IMAGE_OPTIONAL_HEADER32"), hRoot);
             m_infoPosition[10].offset = offset;
             m_infoPosition[10].length = pNt64->FileHeader.SizeOfOptionalHeader;
             m_tree_header.SetItemData(hOptionalHeader, (ULONG_PTR)&m_infoPosition[10]);
@@ -900,9 +947,7 @@ int CDialogPE::mAnalyzeTableInfo()
         for (int i = 0; i < 15; ++i)
         {
             if (pDir[i].VirtualAddress)
-            {
                 m_button_table[i].EnableWindow(TRUE);
-            }
         }
     }
     catch (...)
@@ -913,33 +958,51 @@ int CDialogPE::mAnalyzeTableInfo()
     return 0;
 }
 
-// 分析PE文件,并更新控件状态
+// 分析PE文件,并更新各个控件状态
 int CDialogPE::mAnalyzePEFile()
 {
     int result = 0;
 
+    // 初始化控件状态
+    mInitItems();
+
+    // title
     this->SetWindowTextW(PathFindFileName(m_path));
 
+    // path
     m_edit_path.SetWindowText(m_path);
     m_edit_path.EnableWindow(TRUE);
 
+    // header
     result = mAnalyzeHeaderInfo();
     if (result < 0)
         return -1;
 
+    // section
     result = mAnalyzeSectionInfo();
     if (result < 0)
         return -1;
 
+    // button
     result = mAnalyzeTableInfo();
     if (result < 0)
         return -1;
 
+    // edit text
+    m_edit_text.SetWindowText(TEXT(""));
+    m_edit_text.EnableWindow(TRUE);
+
+    // scrollbar
+    m_scrollbar_hex.EnableWindow(TRUE);
+
+    // edit bottom info
+    m_edit_bottomInfo.SetWindowText(TEXT(""));
+    m_edit_bottomInfo.EnableWindow(TRUE);
 
     return 0;
 }
 
-// 刷新页面信息
+// 更新m_pBuffer ,并刷新页面
 int CDialogPE::mRefreshPage(char* pNewBuffer)
 {
     if (pNewBuffer)
@@ -950,8 +1013,9 @@ int CDialogPE::mRefreshPage(char* pNewBuffer)
         m_isDirty = TRUE;   // 设置脏标记，表示缓冲区已经被修改了
     }
 
-    mInitItems();
     mAnalyzePEFile();
+    mSetHexBegin(0);                // 重置hex显示起始位置
+    InvalidateRect(&m_hexRect);     // 刷新右侧区域显示
 
     // 更新窗口标题，如果缓冲区被修改了，则在后面加上 (dirty) 字样
     if (m_isDirty)
@@ -965,7 +1029,7 @@ int CDialogPE::mRefreshPage(char* pNewBuffer)
     return 0;
 }
 
-// 切换页面显示
+// 切换CEdit text 和 hex  的显示
 int CDialogPE::mSwitchShowFlag(int showFlag)
 {
     if (showFlag == m_showFlag)
@@ -975,13 +1039,14 @@ int CDialogPE::mSwitchShowFlag(int showFlag)
 
     switch (m_showFlag)
     {
-        case 0:
+        case 0:     // text模式
         {
             m_edit_text.ShowWindow(TRUE);
             m_scrollbar_hex.ShowWindow(FALSE);
+            m_flagEraseBk = 1;      // 标记需要擦除背景,否则ScrollBar会残留
             break;
         }
-        case 1:
+        case 1:     // hex模式
         {
             m_edit_text.ShowWindow(FALSE);
             m_scrollbar_hex.ShowWindow(TRUE);
@@ -993,50 +1058,80 @@ int CDialogPE::mSwitchShowFlag(int showFlag)
         }
     }
 
-    // 更新右侧区域
-    InvalidateRect(m_hexRect);
+    // 更新右侧区域显示
+    InvalidateRect(&m_hexRect);
 
     return 0;
 }
 
-// 获取hex显示的页范围
-UINT32 CDialogPE::mGetHexPageRange()
+// 获取页面范围
+int CDialogPE::mGetPageRange()
 {
-    CDC* pDC = GetDC();
     CFont fontNormal;
-    fontNormal.CreatePointFont(mPixelsToPoints(pDC, m_hexFontSize), TEXT("Courier New")); // 等宽字体
+    fontNormal.CreateFont(
+        m_hexFontSize,             // nHeight - 字体高度
+        0,                         // nWidth - 字体宽度(0表示自适应)
+        0,                         // nEscapement - 文本角度(0.1度单位)
+        0,                         // nOrientation - 字符角度
+        FW_NORMAL,                 // nWeight - 字体粗细
+        FALSE,                     // bItalic - 是否斜体
+        FALSE,                     // bUnderline - 是否下划线
+        FALSE,                     // bStrikeOut - 是否删除线
+        DEFAULT_CHARSET,           // nCharSet - 字符集
+        OUT_DEFAULT_PRECIS,        // nOutPrecision - 输出精度
+        CLIP_DEFAULT_PRECIS,       // nClipPrecision - 剪裁精度
+        DEFAULT_QUALITY,           // nQuality - 输出质量
+        DEFAULT_PITCH | FF_SWISS,  // nPitchAndFamily - 字体系列
+        FONT_TYPE                  // lpszFacename - 字体名称
+    );
+    CDC* pDC = GetDC();
     pDC->SelectObject(&fontNormal);
     CSize normalFontSize = pDC->GetTextExtent(TEXT("0"), 1);
-    UINT32 lineMargin = normalFontSize.cy / 2;
-    int pageRange = (m_hexRect.Height() / (normalFontSize.cy + lineMargin)) - 1;
+    TRACE("normalFontSize:%d\n", normalFontSize.cy);
     ReleaseDC(pDC);
-
-    return pageRange;
+    return m_hexRect.Height() / (normalFontSize.cy + normalFontSize.cy / 2) - 1;
 }
 
 // 设置滚动条范围
 int CDialogPE::mSetScrollBarHex()
 {
     int range = m_length / 16 + (m_length % 16 ? 1 : 0);
-    UINT32 pageRange = mGetHexPageRange();
+    int pageRange = mGetPageRange();
 
+    m_scrollbar_hex.EnableWindow(TRUE);
     SCROLLINFO si;
+    memset(&si, 0, sizeof(si));
     si.cbSize = sizeof(si);
     si.nMin = 0;
     si.nMax = range;
     si.nPage = pageRange;
     si.nPos = m_hexBegin >> 4;
     si.fMask = SIF_PAGE | SIF_POS | SIF_RANGE;
-    m_scrollbar_hex.SetScrollInfo(&si, TRUE);
+    m_scrollbar_hex.SetScrollInfo(&si,TRUE);
 
     return 0;
 }
 
-// 像素转换为点
-int CDialogPE::mPixelsToPoints(CDC* pDc, int pixels)
+// 设置hex开始位置
+int CDialogPE::mSetHexBegin(int hexBegin)
 {
-    int a = (int)((pixels * 720) / pDc->GetDeviceCaps(LOGPIXELSX));
-    return a;
+    hexBegin &= 0xFFFFFFF0;
+
+    int range = m_length / 16 + (m_length % 16 ? 1 : 0);
+    int pageRange = mGetPageRange();
+
+    if (hexBegin < 0)
+        m_hexBegin = 0;
+    else if (hexBegin >> 4 > range - pageRange)
+        m_hexBegin = (range - pageRange) << 4;
+    else
+        m_hexBegin = hexBegin;
+
+    m_scrollbar_hex.SetScrollPos(m_hexBegin >> 4);
+
+    InvalidateRect(m_hexRect);
+
+    return 0;
 }
 
 // 绘制hex
@@ -1059,8 +1154,41 @@ int CDialogPE::mDrawHex(CPaintDC* pDC)
 
     // 字体定义: 大字体显示hex,小字体显示符号
     CFont fontNormal, fontSmall;
-    fontNormal.CreatePointFont(mPixelsToPoints(&memDC, m_hexFontSize), TEXT("Courier New")); // 等宽字体
-    fontSmall.CreatePointFont(mPixelsToPoints(&memDC, (int)(m_hexFontSize * 0.9)), TEXT("Courier New")); // 等宽字体
+
+    fontNormal.CreateFont(
+        m_hexFontSize,             // nHeight - 字体高度
+        0,                         // nWidth - 字体宽度(0表示自适应)
+        0,                         // nEscapement - 文本角度(0.1度单位)
+        0,                         // nOrientation - 字符角度
+        FW_NORMAL,                 // nWeight - 字体粗细
+        FALSE,                     // bItalic - 是否斜体
+        FALSE,                     // bUnderline - 是否下划线
+        FALSE,                     // bStrikeOut - 是否删除线
+        DEFAULT_CHARSET,           // nCharSet - 字符集
+        OUT_DEFAULT_PRECIS,        // nOutPrecision - 输出精度
+        CLIP_DEFAULT_PRECIS,       // nClipPrecision - 剪裁精度
+        DEFAULT_QUALITY,           // nQuality - 输出质量
+        DEFAULT_PITCH | FF_SWISS,  // nPitchAndFamily - 字体系列
+        FONT_TYPE                  // lpszFacename - 字体名称
+    );
+
+    fontSmall.CreateFont(
+        (int)(m_hexFontSize * 0.9), // nHeight - 字体高度
+        0,                         // nWidth - 字体宽度(0表示自适应)
+        0,                         // nEscapement - 文本角度(0.1度单位)
+        0,                         // nOrientation - 字符角度
+        FW_NORMAL,                 // nWeight - 字体粗细
+        FALSE,                     // bItalic - 是否斜体
+        FALSE,                     // bUnderline - 是否下划线
+        FALSE,                     // bStrikeOut - 是否删除线
+        DEFAULT_CHARSET,           // nCharSet - 字符集
+        OUT_DEFAULT_PRECIS,        // nOutPrecision - 输出精度
+        CLIP_DEFAULT_PRECIS,       // nClipPrecision - 剪裁精度
+        DEFAULT_QUALITY,           // nQuality - 输出质量
+        DEFAULT_PITCH | FF_SWISS,  // nPitchAndFamily - 字体系列
+        FONT_TYPE                   // lpszFacename - 字体名称
+    );
+
     memDC.SelectObject(&fontSmall);
     smallFontSize = memDC.GetTextExtent(TEXT("0"), 1);
     memDC.SelectObject(&fontNormal);
@@ -1090,14 +1218,15 @@ int CDialogPE::mDrawHex(CPaintDC* pDC)
     }
 
     // 打印hex
-    int n = mGetHexPageRange();  // m_hexRect区域能显示的行数,  要去掉最顶部的[0,F]行
+    int n = (m_hexRect.Height() / (normalFontSize.cy + lineMargin)) - 1;  // m_hexRect区域能显示的行数,  要去掉最顶部的[0,F]行
 
-    m_hexBeginWithBkColor = 3;
-    m_hexLengthWithBkColor = 50;
 
     rect.top = normalFontSize.cy + lineMargin;
-    for (int i = 0; i < n; ++i)
+    for (int i = 0; i <= n; ++i)
     {
+        if (m_hexBegin + i * 16 >= m_length)
+            break;
+
         memDC.SelectObject(&fontNormal);
 
         rect.bottom = rect.top + normalFontSize.cy;
@@ -1108,7 +1237,6 @@ int CDialogPE::mDrawHex(CPaintDC* pDC)
         memDC.DrawTextEx(str, &rect, DT_LEFT | DT_VCENTER, NULL);
 
         // hex
-
         for (int j = 0; j < 16; ++j)
         {
             rect.left = normalFontSize.cx * LEFT_HEX_ADDR_CHAR_NUM + j * 4 * normalFontSize.cx;
@@ -1151,23 +1279,6 @@ int CDialogPE::mDrawHex(CPaintDC* pDC)
     return 0;
 }
 
-// 设置hex开始位置
-int CDialogPE::mSetHexBegin(int hexBegin)
-{
-    int range = m_length / 16 + (m_length % 16 ? 1 : 0);
-    int pageRange = mGetHexPageRange();
-
-    if (hexBegin < 0)
-        m_hexBegin = 0;
-    else if (hexBegin >> 4 > range - pageRange)
-        m_hexBegin = (range - pageRange) << 4;
-    else
-        m_hexBegin = hexBegin;
-
-    InvalidateRect(m_hexRect);
-
-    return 0;
-}
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
@@ -1180,13 +1291,11 @@ BOOL CDialogPE::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
+    m_hAccelTable = LoadAccelerators(AfxGetResourceHandle(), MAKEINTRESOURCE(IDR_ACCELERATOR_PE_DLG));
+
     int result = 0;
 
     result = mCreateItems();
-    if (result < 0)
-        return FALSE;
-
-    result = mInitItems();
     if (result < 0)
         return FALSE;
 
@@ -1197,22 +1306,15 @@ BOOL CDialogPE::OnInitDialog()
 	return TRUE; 
 }
 
-// 处理按键事件
-void CDialogPE::OnButtonClickDataDirectory(UINT id)
+// 绘图
+void CDialogPE::OnPaint()
 {
-    switch (id)
-    {
-    case CBUTTON_TABLE_ID_BEGIN:
-        break;
-    case CBUTTON_TABLE_ID_BEGIN + 1:
-        break;
-    case CBUTTON_TABLE_ID_BEGIN + 2:
-        break;
-    case CBUTTON_TABLE_ID_BEGIN + 3:
-        break;
-    default:
-        break;
-    }
+    CPaintDC dc(this);
+
+    if (m_showFlag != 1)
+        return;
+
+    mDrawHex(&dc);
 }
 
 // 关闭对话框
@@ -1234,6 +1336,24 @@ void CDialogPE::OnDlgPeMenuTest()
 {
     UINT32 n = (m_showFlag + 1)% MAX_SHOW_FLAG;
     mSwitchShowFlag(n);
+}
+
+// 处理按键事件
+void CDialogPE::OnButtonClickDataDirectory(UINT id)
+{
+    switch (id)
+    {
+    case CBUTTON_TABLE_ID_BEGIN:
+        break;
+    case CBUTTON_TABLE_ID_BEGIN + 1:
+        break;
+    case CBUTTON_TABLE_ID_BEGIN + 2:
+        break;
+    case CBUTTON_TABLE_ID_BEGIN + 3:
+        break;
+    default:
+        break;
+    }
 }
 
 // 修改节
@@ -1342,21 +1462,6 @@ void CDialogPE::OnListCtrlSelectMenu(NMHDR* pNMHDR, LRESULT* pResult)
     pPopupMenu->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
 }
 
-// 绘图
-void CDialogPE::OnPaint()
-{
-    CPaintDC dc(this); 
-
-    if (m_showFlag != 1)
-        return;
-
-    // dc.FillRect(m_hexRect, &CBrush(RGB(111, 111, 255)));
-
-    mDrawHex(&dc);
-
-
-}
-
 // 滚动条事件
 void CDialogPE::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 {
@@ -1410,8 +1515,10 @@ void CDialogPE::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 // 鼠标滚轮事件
 BOOL CDialogPE::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
-    short state = GetKeyState(VK_CONTROL);
     short num = -zDelta / WHEEL_DELTA; // 滚轮滚动方向和步长	
+
+    // Ctrl+滚轮 改变字体大小
+    short state = GetKeyState(VK_CONTROL);
     if (state & 0x8000)
     {
         m_hexFontSize += num;
@@ -1430,8 +1537,29 @@ BOOL CDialogPE::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 // 背景擦除事件: 解决白屏闪烁问题
 BOOL CDialogPE::OnEraseBkgnd(CDC* pDC)
 {
-    // 背景擦除是白屏闪烁的原因.
-    return TRUE;
+    // 需要重绘的情况设置为1，否则不重绘,  例如CScrollBar的显示刷新
+    if (m_flagEraseBk == 1)
+    {
+        m_flagEraseBk = 0;
+        return CDialogEx::OnEraseBkgnd(pDC);
+    }
 
-    return CDialogEx::OnEraseBkgnd(pDC);
+   return TRUE;
 }
+
+// 加速键:     跳转到指定地址
+void CDialogPE::OnHexGoto()
+{
+    CString str;
+    CDialogInput input(TEXT("请输入地址"),str);
+    INT_PTR result = input.DoModal();
+    if (result == IDOK)
+    {
+        UINT32 addr = _tcstoul(str, NULL, 16);
+        mSetHexBegin(addr);
+    }
+}
+
+
+
+
