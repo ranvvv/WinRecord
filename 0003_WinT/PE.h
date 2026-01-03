@@ -68,18 +68,18 @@ extern "C" {
 
 	// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-	UINT64 align(UINT64 num, UINT64 standard);						// 对齐函数
-	UINT64 fileAlignment(const char* const p, UINT64 num);			// 文件对齐
-	UINT64 sectionAlignment(const char* const p, UINT64 num);		// 节对齐
-	UINT32 rvaToFoa(const char* const pBuffer, UINT32 rva);			// rva到foa
-	UINT32 foaToRva(const char* const pBuffer, UINT32 foa);			// foa到rva
+	UINT64 align(UINT64 num, UINT64 standard);			// 对齐函数
+	UINT64 fileAlignment(PCHAR p, UINT64 num);			// 文件对齐
+	UINT64 sectionAlignment(PCHAR p, UINT64 num);		// 节对齐
+	UINT32 rvaToFoa(PCHAR pBuffer, UINT32 rva);			// rva到foa
+	UINT32 foaToRva(PCHAR pBuffer, UINT32 foa);			// foa到rva
 
 	// 通过rva 找到buffer中的foa 地址
-#define RVA_TO_VA(p,rva) (VOID*)((PCHAR)(p)+rvaToFoa((p),(rva)))
+	#define RVA_TO_FILE_BUFFER_VA(p,rva) (VOID*)((PCHAR)(p)+rvaToFoa((p),((UINT32)rva)))
 
 
-	PCHAR mAllocBuffer(UINT32 size);
-	void mFreeBuffer(PCHAR pBuffer);
+	PCHAR mAllocBuffer(UINT32 size);					// 分配缓冲区
+	VOID mFreeBuffer(PCHAR pBuffer);					// 释放缓冲区
 
 	// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
@@ -87,10 +87,9 @@ extern "C" {
 
 	// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-	int IsValidPE(char const* const buffer, size_t bufferSize);		// 判断是否为有效的PE文件
-
-	UINT32 getPEFileSize(const char* const pBuffer);				// 获取PE文件大小
-	UINT32 getPEImageSize(const char* const pBuffer);				// 获取PE镜像大小
+	int IsValidPE(PCHAR pBuffer, UINT32 bufferSize, UINT32 isMemImage);		// 判断是否为有效的PE文件
+	UINT32 getPEFileSize(PCHAR pBuffer);									// 获取PE文件大小
+	UINT32 getPEImageSize(PCHAR pBuffer);									// 获取PE镜像大小
 
 	// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
@@ -98,12 +97,71 @@ extern "C" {
 
 	// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-	char* fileBufferToImageBuffer(const char* const pBuffer);		// 文件缓冲区到镜像缓冲区的转换
-	char* imageBufferToFileBuffer(const char* const pBuffer);		// 镜像缓冲区到文件缓冲区的转换
+	int fileBufferToImageBuffer(PCHAR pBuffer, UINT32 bufferSize, PCHAR* pBufferNewOut, UINT32* pSizeOut);	// 文件缓冲区到镜像缓冲区的转换
+	int imageBufferToFileBuffer(PCHAR pBuffer, UINT32 bufferSize, PCHAR* pBufferNewOut, UINT32* pSizeOut);	// 镜像缓冲区到文件缓冲区的转换
 
-	PCHAR addSection(PCHAR pBuffer, PCHAR name, UINT32 size, UINT32 charac);						// 添加节
-	PCHAR modifySection(PCHAR pBuffer, UINT32 index, PCHAR name, UINT32 size, UINT32 charac);		// 修改节
-	PCHAR mergeSection(PCHAR pBuffer, UINT16 index);												// 合并节		
+	int addSectionInFileBuffer(PCHAR pBuffer, UINT32 bufferSize, PCHAR name, UINT32 size, UINT32 charac, 
+		PCHAR* pBufferNewOut, UINT32* pSizeNewOut);															// 添加节
+	int modifySectionInFileBuffer(PCHAR pBuffer, UINT32 bufferSize, UINT32 index, PCHAR name, UINT32 size,
+		UINT32 charac, PCHAR* pBufferNewOut, UINT32* pSizeNewOut);											// 修改节
+	int mergeSectionInFileBuffer(PCHAR pBuffer, UINT32 bufferSize, UINT16 index, PCHAR* pBufferNewOut, 
+		UINT32* pSizeNewOut);																				// 合并节
+
+	// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+	//	导出表
+
+	// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+	// 获取导出项 RVA
+	UINT32 getExportItemRvaByNameInFileBuffer(PCHAR pBuffer, PCHAR name);
+	UINT32 getExportItemRvaByNameInMemBuffer(PCHAR pBuffer, PCHAR name);
+	UINT32 getExportItemRvaByNumberInFileBuffer(PCHAR pBuffer, UINT32 number);
+	UINT32 getExportItemRvaByNumberInMemBuffer(PCHAR pBuffer, UINT32 number);
+	//	导出表大小
+	typedef struct _EXPORT_TABLE_SIZE
+	{
+		UINT32 nameSize;
+		UINT32 tableSize;
+		UINT32 arrFuncRvaSize;
+		UINT32 arrNameRvaSize;
+		UINT32 arrOrdinalSize;
+	}EXPORT_TABLE_SIZE;
+	UINT32 getExportTableSizeInFileBuffer(PCHAR pBuffer, EXPORT_TABLE_SIZE* pExportTableSize);
+	int moveExportTableInFileBuffer(PCHAR pBuffer, UINT32 begin);
+
+
+	// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+	//	导入表
+
+	// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+	// 导入表大小
+	typedef struct _IMPORT_TABLE_SIZE
+	{
+		UINT32 nameSize;
+		UINT32 importTableSize;
+		UINT32 INTSize;
+	}IMPORT_TABLE_SIZE;
+
+	UINT32 getImportTableSizeInFileBuffer(PCHAR pBuffer, IMPORT_TABLE_SIZE* pImportTableSize);
+	int moveImportTableInFileBuffer(PCHAR pBuffer, UINT32 begin);
+
+	int importTableInjectionByNameInFileBuffer(PCHAR pBuffer, UINT32 bufferSize, PCHAR dllName, PCHAR funcName, PCHAR* ppNewBuffer, UINT32* pSizeOut);
+	int importTableInjectionByNumberInFileBuffer(PCHAR pBuffer, UINT32 bufferSize, PCHAR dllName, UINT32 number, PCHAR* ppNewBuffer, UINT32* pSizeOut);
+
+#ifndef _KERNEL_MODE
+	int fixImportIATInImageBuffer(PCHAR pBuffer);
+#endif
+
+	// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+	//	重定位表
+
+	// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+	INT32 relocateImageBuffer(PCHAR pBuffer, UINT64 newBase);
 
 
 #ifdef __cplusplus

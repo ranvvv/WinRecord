@@ -2,3 +2,4 @@
 
 
 int mGetFileData(const char* path, char** ppBuffer, int* pSize);		// 读取文件到缓冲区
+int mSaveFileData(const char* path, const char* pBuffer, int size);		// 保存缓冲区到文件

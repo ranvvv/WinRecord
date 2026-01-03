@@ -19,7 +19,6 @@ CDialogInput::~CDialogInput()
 
 }
 
-
 BOOL CDialogInput::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
@@ -29,7 +28,6 @@ BOOL CDialogInput::OnInitDialog()
 
 	return TRUE;  
 }
-
 
 void CDialogInput::OnBnClickedInputDlgOk()
 {

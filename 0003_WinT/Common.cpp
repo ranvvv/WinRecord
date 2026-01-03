@@ -44,5 +44,21 @@ int mGetFileData(const char* path, char** ppBuffer, int* pSize)
 }
 
 
+int mSaveFileData(const char* path, const char* pBuffer, int size)
+{
+	if (path == NULL || pBuffer == NULL || size <= 0)
+		return -1;
 
+	FILE* pf = NULL;
+	errno_t err = fopen_s(&pf, path, "wb");
+	if (err != 0 || pf == NULL)
+		return -2;
+
+	int n = (int)fwrite(pBuffer, sizeof(char), size, pf);
+	if (n != size)
+		return -3;
+
+	fclose(pf);
+	return 0;
+}
 

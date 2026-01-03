@@ -16,9 +16,10 @@ private:
 	CString& m_str;
 
 public:
-	CDialogInput(CString title,CString& str,CWnd* pParent = nullptr);   // 标准构造函数
+	CDialogInput(CString title,CString& str,CWnd* pParent = nullptr);  
 	virtual ~CDialogInput();
 
+public:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnBnClickedInputDlgOk();
 };

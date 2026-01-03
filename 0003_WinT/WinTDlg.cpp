@@ -100,6 +100,7 @@ void CWinTDlg::OnBnClickedButtonPe()
 
 	// 测试代码
 	CStringA strPathA = "G:\\code\\WinRecord\\0003_WinT\\dist\\WinT.exe";// 测试代码
+	//CStringA strPathA = "f:\\b.dll";
 
 	char* pBuffer = NULL;
 	int nSize = 0;
@@ -147,6 +148,9 @@ void CWinTDlg::OnDropFiles(HDROP hDropInfo)
 		pPE->UpdateData(FALSE);
 	}
 
-	// 4. 必须调用：释放拖拽相关资源
+	// 3. 必须调用：释放拖拽相关资源
 	DragFinish(hDropInfo);
 }
+
+
+
