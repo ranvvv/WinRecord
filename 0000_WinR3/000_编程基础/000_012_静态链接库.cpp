@@ -1,17 +1,32 @@
-#if 0
+#include "../common.h"
 
-// 静态库不生成exe,而是生成.lib文件
+#include "../TestLib/TestLib.h"
 
+// 静态库的使用方式1: 通过#pragma 引入
+#pragma comment(lib, "./TestLib/dist/TestLib.lib")
 
-
-// 静态库的使用方式1: 
-#include "a.h"   // 静态库的头文件,用来识别静态库中的函数
-#pragma comment(lib, "a.lib")  // 静态库的链接指令,将lib直接复制到本exe中.
-
-// 静态库的使用方式2:
-// 将lib配置到vs的链接器中, 这样就不需要上面的引入了,直接头文件即可.
-
-
+//static void s1()
+//{
+//	int a = plus(1, 2);
+//	printf("a = %d\n", a);
+//}
 
 
-#endif
+// 静态库的使用方式2:  将lib配置到vs的链接器中
+
+//static void s2()
+//{
+//	int a = plus(1, 2);
+//	printf("a = %d\n", a);
+//}
+
+
+// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+void p000_012()
+{
+}

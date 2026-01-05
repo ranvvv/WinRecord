@@ -16,6 +16,12 @@
     <Filter Include="源文件\000_编程基础">
       <UniqueIdentifier>{eb22e87d-0676-4ebe-b33c-1b4a52a51bfe}</UniqueIdentifier>
     </Filter>
+    <Filter Include="源文件\001_界面例子">
+      <UniqueIdentifier>{ee39abd2-3891-4b41-a0e9-3d3f584264a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\002_服务管理">
+      <UniqueIdentifier>{7e77b58d-b616-4cfe-8594-b24d531b7210}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -61,6 +67,45 @@
       <Filter>源文件\000_编程基础</Filter>
     </ClCompile>
     <ClCompile Include="000_编程基础\000_013_内存管理.cpp">
+      <Filter>源文件\000_编程基础</Filter>
+    </ClCompile>
+    <ClCompile Include="001_000_滚动条.cpp">
+      <Filter>源文件\001_界面例子</Filter>
+    </ClCompile>
+    <ClCompile Include="001_001_数字时钟.cpp">
+      <Filter>源文件\001_界面例子</Filter>
+    </ClCompile>
+    <ClCompile Include="001_002_模拟时钟.cpp">
+      <Filter>源文件\001_界面例子</Filter>
+    </ClCompile>
+    <ClCompile Include="001_003_typer.cpp">
+      <Filter>源文件\001_界面例子</Filter>
+    </ClCompile>
+    <ClCompile Include="002_000_DriverLoader.cpp">
+      <Filter>源文件\002_服务管理</Filter>
+    </ClCompile>
+    <ClCompile Include="002_001_Service.cpp">
+      <Filter>源文件\002_服务管理</Filter>
+    </ClCompile>
+    <ClCompile Include="002_002_ServiceManager.cpp">
+      <Filter>源文件\002_服务管理</Filter>
+    </ClCompile>
+    <ClCompile Include="001_004_窗口特效.cpp">
+      <Filter>源文件\001_界面例子</Filter>
+    </ClCompile>
+    <ClCompile Include="000_014_IPC.cpp">
+      <Filter>源文件\000_编程基础</Filter>
+    </ClCompile>
+    <ClCompile Include="000_015_系统信息.cpp">
+      <Filter>源文件\000_编程基础</Filter>
+    </ClCompile>
+    <ClCompile Include="000_016_模块.cpp">
+      <Filter>源文件\000_编程基础</Filter>
+    </ClCompile>
+    <ClCompile Include="000_017_TLS.cpp">
+      <Filter>源文件\000_编程基础</Filter>
+    </ClCompile>
+    <ClCompile Include="000_018_VEH.cpp">
       <Filter>源文件\000_编程基础</Filter>
     </ClCompile>
   </ItemGroup>

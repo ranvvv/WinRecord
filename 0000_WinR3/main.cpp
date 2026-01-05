@@ -4,7 +4,7 @@
 // common main
 int APIENTRY mWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PTSTR cmdline, int cmdshow)
 {
-	p000_008();
+	p000_011();
 	return 0;
 }
 

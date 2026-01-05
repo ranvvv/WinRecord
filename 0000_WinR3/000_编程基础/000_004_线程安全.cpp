@@ -705,6 +705,94 @@ static void s8()
 }
 
 
+// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+//					8. 定时器的手工重置和自动重置
+
+// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+// Timer的APC是发给创建timer的线程的
+VOID CALLBACK TimerAPCProc(PVOID pvArgToCompletionRoutine, DWORD dwTimerLowValue, DWORD dwTimerHighValue)
+{
+	printf("定时器触发了! %016I64X  currentThreadid: %d\n", (UINT64)pvArgToCompletionRoutine, GetCurrentThreadId());
+}
+
+static HANDLE hTimer = NULL;
+
+static DWORD WINAPI ThreadProc_s9(LPVOID lpParameter)
+{
+	DWORD param = (DWORD)(UINT64)lpParameter;
+	printf("new thread begin %x \n", GetCurrentThreadId());
+	for (int i = 0; i < 3; i++)
+	{
+		// 1. timer apc 是发送给创建timer的线程的. 所以这个不会返回
+		// SleepEx(INFINITE, TRUE);
+		// printf("thead : %d  ; APC 唤醒 : %d\n", param,i);
+
+		// 2. timer有信号时可继续执行, 
+		WaitForSingleObjectEx(hTimer, INFINITE, TRUE);
+		printf("timer signaled %d \n", GetCurrentThreadId());
+	}
+	return 0;
+}
+
+static void s9()
+{
+	// 创建一个可等待计时器
+	hTimer = CreateWaitableTimer(NULL, TRUE/*是否手工重置*/, NULL);
+	// 手工重置: 计时器有信号后,等待这个计时器的所有线程都会变为有信号状态.  要让计时器没信号要用SetEvent()自己实现.
+	// 自动重置: 计时器有信号后,只有一个等待此计时器的线程可运行,之后计时器会自动重置为没信号状态.
+	if (hTimer == NULL)
+	{
+		printf("CreateWaitableTimer failed (%d)\n", GetLastError());
+		return;
+	}
+
+	DWORD arg = 0x11111111;
+
+#define ONE_SECOND 10000000LL
+
+	INT64 qwDueTime = -2LL * ONE_SECOND;
+	LARGE_INTEGER liDueTime;
+	liDueTime.LowPart = (DWORD)(qwDueTime & 0xFFFFFFFF);
+	liDueTime.HighPart = (DWORD)(qwDueTime >> 32);
+	// 设置回调函数
+	if (!SetWaitableTimer(hTimer, &liDueTime/*延迟时间*/, 2000/*每隔2秒执行一次,为0就只触发一次*/, TimerAPCProc/*异步APC函数*/, &arg, FALSE))
+	{
+		printf("SetWaitableTimer failed (%d)\n", GetLastError());
+		CloseHandle(hTimer);
+		return;
+	}
+
+	DWORD threadID = 0;
+	LPVOID threadParam = (LPVOID)0x111;
+	HANDLE hThread = CreateThread(NULL, 0, ThreadProc_s9, threadParam, 0, &threadID);
+
+	for (int i = 0; i < 10; i++)
+	{
+		// 1. timer有信号时可继续执行,但是不会执行APC,因为普通的WaitForSingleObject()不会唤醒APC.
+		// WaitForSingleObject(hTimer, INFINITE);
+		// printf("timer signaled \n");
+
+
+		// 2. timer有信号时可继续执行,会执行APC,  Ex版本会设置UserApcPending.
+		//WaitForSingleObjectEx(hTimer, INFINITE, TRUE);
+		//printf("timer signaled %d \n",GetCurrentThreadId());
+
+
+		// 3. 不去管Timer的信号,只等待APC唤醒.
+		// SleepEx(INFINITE, TRUE);
+		// printf("APC 唤醒 : %d\n", i);
+	}
+
+	// 等待定时器触发
+	WaitForSingleObject(hThread, INFINITE);
+
+	CloseHandle(hTimer);
+	return;
+}
+
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 

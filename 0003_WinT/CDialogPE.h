@@ -126,6 +126,8 @@ public:
 
 	afx_msg void OnDlgPeMenuToFile();
 	afx_msg void OnDlgPeMenuToImage();
+	afx_msg void OnDlgPeMenuImportInject();
+	afx_msg void OnDlgPeMenuFakeShellExe();
 };
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$

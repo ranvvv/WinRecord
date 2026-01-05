@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "Common.h"
+#include<locale.h>
+
 
 // 获取文件数据
 int mGetFileData(const char* path, char** ppBuffer, int* pSize)
@@ -43,7 +45,7 @@ int mGetFileData(const char* path, char** ppBuffer, int* pSize)
 	return 0;
 }
 
-
+// 保存文件数据
 int mSaveFileData(const char* path, const char* pBuffer, int size)
 {
 	if (path == NULL || pBuffer == NULL || size <= 0)
@@ -60,5 +62,48 @@ int mSaveFileData(const char* path, const char* pBuffer, int size)
 
 	fclose(pf);
 	return 0;
+}
+
+
+
+static int b_console = 0;
+
+int mCreateConsole(const TCHAR title[])
+{
+	if (!b_console )
+	{
+		if (!AllocConsole())
+			return -1;
+
+		b_console = 1;
+
+		// 重载C 标准输入输出
+		FILE* in, * out, * err;
+		freopen_s(&in, "CONIN$", "r+t", stdin);
+		freopen_s(&out, "CONOUT$", "w+t", stdout);
+		freopen_s(&err, "CONERR$", "w+t", stderr);
+
+		setlocale(LC_ALL, "");	// 设置本地化为当前环境,解决wprintf中文乱码问题
+
+		if (title)
+			SetConsoleTitle(title);
+
+		return 1;
+	}
+	return 0;
+}
+
+void mCloseConsole()
+{
+	if (b_console)
+	{
+		printf("按任意键退出...\n");
+		getchar();
+		fclose(stderr);
+		fclose(stdout);
+		fclose(stdin);
+		FreeConsole();
+		b_console = 0;
+	}
 }
 

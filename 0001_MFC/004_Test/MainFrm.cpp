@@ -17,6 +17,7 @@
 IMPLEMENT_DYNCREATE(CMainFrame, CFrameWnd)
 
 BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
+	ON_WM_NCLBUTTONDOWN()
 END_MESSAGE_MAP()
 
 // CMainFrame 构造/析构
@@ -57,3 +58,19 @@ void CMainFrame::Dump(CDumpContext& dc) const
 
 // CMainFrame 消息处理程序
 
+
+
+void CMainFrame::OnNcLButtonDown(UINT nHitTest, CPoint point)
+{
+	if (nHitTest == HTCAPTION )
+	{
+		MessageBox(_T("你点击了标题栏"), _T("提示"), MB_OK);
+	}
+
+	if (nHitTest == HTCLOSE)
+	{
+		MessageBox(_T("你点击了关闭按钮"), _T("提示"), MB_OK);
+	}
+
+	CFrameWnd::OnNcLButtonDown(nHitTest, point);
+}

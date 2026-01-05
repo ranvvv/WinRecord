@@ -41,6 +41,7 @@ public:
 	afx_msg void OnPaint();
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+	afx_msg void OnNcLButtonDown(UINT nHitTest, CPoint point);
 };
 
 #ifndef _DEBUG  // TestView.cpp 中的调试版本

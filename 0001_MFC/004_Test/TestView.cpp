@@ -26,6 +26,7 @@ BEGIN_MESSAGE_MAP(CTestView, CView)
 	ON_WM_PAINT()
 	ON_WM_LBUTTONDOWN()
 	ON_WM_MOUSEMOVE()
+	ON_WM_NCLBUTTONDOWN()
 END_MESSAGE_MAP()
 
 // CTestView 构造/析构
@@ -137,6 +138,10 @@ void CTestView::OnPaint()
 
 void CTestView::OnLButtonDown(UINT nFlags, CPoint point)
 {
+	if (nFlags & MK_SHIFT)
+	{
+		MessageBox(L"Shift键被按下！");
+	}
 
 	if(CRect(500, 100, 600, 200).PtInRect(point))
 	{
@@ -158,4 +163,11 @@ void CTestView::OnMouseMove(UINT nFlags, CPoint point)
 		Invalidate();
 
 	CView::OnMouseMove(nFlags, point);
+}
+
+
+void CTestView::OnNcLButtonDown(UINT nHitTest, CPoint point)
+{
+
+	CView::OnNcLButtonDown(nHitTest, point);
 }
