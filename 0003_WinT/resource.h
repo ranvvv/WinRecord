@@ -31,13 +31,15 @@
 #define ID_DLG_PE_MENU_IMPORT_INJECT    32794
 #define ID_32795                        32795
 #define ID_DLG_PE_MENU_FAKE_SHELL_EXE   32796
+#define ID_32797                        32797
+#define ID_DLG_PE_MENU_ADD_SHELL        32798
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        139
-#define _APS_NEXT_COMMAND_VALUE         32797
+#define _APS_NEXT_COMMAND_VALUE         32799
 #define _APS_NEXT_CONTROL_VALUE         1006
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

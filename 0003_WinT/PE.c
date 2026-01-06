@@ -1312,27 +1312,30 @@ free(pBufferImage);
 
 
 // 加壳
-PCHAR exeAddMemExecShell(PCHAR pShellBuffer, PCHAR pExeBuffer)
+int shellFileBufferApendExeFileBuffer(PCHAR pShellBuffer,UINT32 shellBufferSize ,PCHAR pExeBuffer,UINT32 exeBufferSize,PCHAR* ppNewBufferOut,UINT32* pNewBufferSizeOut)
 {
-	PCHAR pNewBuffer;
 	PE_VAR_DEFINITION;
-	UINT32 size;
-
-	size = getPEFileSize(pExeBuffer);
 	int result;
+	PCHAR pNewBuffer;
 	UINT32 newBufferSize;
-	result = addSectionInFileBuffer(pShellBuffer, getPEFileSize(pShellBuffer), (PCHAR)".add", size, 0xE00000E0, &pNewBuffer, &newBufferSize);
-	if (result < 0)
-		return NULL;
 
+	// 加节,用来存放exe文件内容
+	result = addSectionInFileBuffer(pShellBuffer,shellBufferSize, (PCHAR)".add", exeBufferSize , 0xE00000E0, &pNewBuffer, &newBufferSize);
+	if (result < 0)
+		return -1;
 
 	PE_VAR_ASSIGN(pNewBuffer);
 
-	memcpy(pNewBuffer + pSec[pNt32->FileHeader.NumberOfSections - 1].PointerToRawData, pExeBuffer, size);
+	// 将exe文件内容拷贝到新加的节中
+	memcpy(pNewBuffer + pSec[pNt32->FileHeader.NumberOfSections - 1].PointerToRawData, pExeBuffer, exeBufferSize);
 
-	for (size_t i = 0; i < size / 4; i++)
+	// 数据加密
+	for (size_t i = 0; i < pSec[pNt32->FileHeader.NumberOfSections - 1].SizeOfRawData/ 4; i++)
 		*(UINT32*)(pNewBuffer + pSec[pNt32->FileHeader.NumberOfSections - 1].PointerToRawData + i * sizeof(int)) ^= 0x23333333;
 
-	return pNewBuffer;
+	*ppNewBufferOut = pNewBuffer;
+	*pNewBufferSizeOut = newBufferSize;
+
+	return 0;
 }
 

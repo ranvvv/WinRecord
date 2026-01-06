@@ -72,6 +72,10 @@ private:
 	afx_msg void OnDlgPeMenuTest();
 	afx_msg void OnDlgPeMenuSwitch();
 	afx_msg void OnDlgPeMenuSave();
+	afx_msg void OnDlgPeMenuToFile();
+	afx_msg void OnDlgPeMenuToImage();
+	afx_msg void OnDlgPeMenuImportInject();
+	afx_msg void OnDlgPeMenuFakeShellExe();
 
 	afx_msg void OnPaint();
 	afx_msg void OnTreeCtrlSelectChange(NMHDR* pNMHDR, LRESULT* pResult);
@@ -94,7 +98,7 @@ private:
 	int mAnalyzeSectionInfo();							// 分析section信息
 	int mAnalyzeTableInfo();							// 分析table信息
 	int mAnalyzePEFile();								// 分析PE文件信息 : 分析header,section,table信息
-	int mRefreshPage(char* pNewBuffer=NULL,int len=0);	// 刷新页面,可更新缓冲区
+	int mRefreshPage(char* pNewBuffer=NULL,int len=0,int isMemImage = 0);	// 刷新页面,可更新缓冲区
 	int mSwitchShowFlag(int showFlag);					// 切换显示标志
 	int mDrawHex(CPaintDC* pDc);						// 绘制hex
 	int mSetScrollBarHex();								// 设置滚动条hex
@@ -119,15 +123,15 @@ private:
 	void mGetPEIATTableInfo();							// 获取IAT表信息
 	void mGetPEDelayLoadImportTableInfo();				// 获取延迟加载导入表信息
 	void mGetPEComTableInfo();							// 获取COM表信息
+
+	int mFakeShellRun(CString shellPath,PCHAR pBufferExe,UINT32 sizeofBufferExe);	// 借壳执行
+
+
+
+
+
 public:
-
-
-
-
-	afx_msg void OnDlgPeMenuToFile();
-	afx_msg void OnDlgPeMenuToImage();
-	afx_msg void OnDlgPeMenuImportInject();
-	afx_msg void OnDlgPeMenuFakeShellExe();
+	afx_msg void OnDlgPeMenuAddShell();
 };
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -180,3 +184,7 @@ public:
 
 // 字体定义
 #define FONT_TYPE TEXT("Courier New")
+
+
+#define FILE_SHELL_PATH "\\FileShell\\dist\\"
+#define FILE_SHELL_NAME "FileShell.exe"

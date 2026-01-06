@@ -1,4 +1,5 @@
-﻿#include<winnt.h>
+﻿#include<windows.h>
+
 #include "pch.h"
 #include "WinT.h"
 #include "CDialogPE.h"
@@ -57,6 +58,7 @@ BEGIN_MESSAGE_MAP(CDialogPE, CDialogEx)
 	ON_COMMAND(ID_DLG_PE_MENU_TO_IMAGE, &CDialogPE::OnDlgPeMenuToImage)
 	ON_COMMAND(ID_DLG_PE_MENU_IMPORT_INJECT, &CDialogPE::OnDlgPeMenuImportInject)
 	ON_COMMAND(ID_DLG_PE_MENU_FAKE_SHELL_EXE, &CDialogPE::OnDlgPeMenuFakeShellExe)
+	ON_COMMAND(ID_DLG_PE_MENU_ADD_SHELL, &CDialogPE::OnDlgPeMenuAddShell)
 END_MESSAGE_MAP()
 
 
@@ -951,7 +953,7 @@ int CDialogPE::mAnalyzePEFile()
 }
 
 // 更新m_pBuffer ,并刷新页面
-int CDialogPE::mRefreshPage(char* pNewBuffer,int len )
+int CDialogPE::mRefreshPage(char* pNewBuffer,int len ,int isMemImage)
 {
 	if (pNewBuffer)
 	{
@@ -966,6 +968,8 @@ int CDialogPE::mRefreshPage(char* pNewBuffer,int len )
 		}
 		if (len)
 			m_length = len;
+
+		m_isMemImage = isMemImage;
 	}
 
 	mAnalyzePEFile();
@@ -2281,6 +2285,139 @@ void CDialogPE::mGetPEComTableInfo()
 	}
 }
 
+// 借壳执行
+int CDialogPE::mFakeShellRun(CString shellPath, PCHAR pBufferExe/*file buffer*/, UINT32 sizeofBufferExe)
+{
+	STARTUPINFO si;
+	PROCESS_INFORMATION pi;
+	ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
+	ZeroMemory(&pi, sizeof(pi));
+
+	if (!CreateProcess(
+		shellPath,
+		NULL,               // Command line
+		NULL,               // Process handle not inheritable
+		NULL,               // Thread handle not inheritable
+		FALSE,              // Set handle inheritance to FALSE
+		CREATE_NEW_CONSOLE | CREATE_SUSPENDED, //  子进程新建控制台.否则父子就用一个控制台,挂起形式创建
+		NULL,               // Use parent's environment block
+		NULL,               // Use parent's starting directory 
+		&si,                // Pointer to STARTUPINFO structure
+		&pi)                // Pointer to PROCESS_INFORMATION structure
+		)
+	{
+		return -1;
+	}
+	CloseHandle(pi.hProcess);
+	CloseHandle(pi.hThread);
+
+	// 重新打开进程线程,以获取权限
+	HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS | PROCESS_VM_OPERATION, FALSE, pi.dwProcessId);
+	if (!hProcess)
+		return -2;
+	HANDLE hThread = OpenThread(THREAD_ALL_ACCESS | THREAD_GET_CONTEXT | THREAD_SET_CONTEXT, false, pi.dwThreadId);
+	if (!hThread)
+	{
+		CloseHandle(hProcess);
+		return -3;
+	}
+
+
+	// 获取  线程初始上下文环境
+	CONTEXT context = { 0 };
+	context.ContextFlags = CONTEXT_FULL;	// 获取所有值.
+	if (!GetThreadContext(hThread, &context))
+	{
+		CloseHandle(hProcess);
+		CloseHandle(hThread);
+		return -4;
+	}
+
+	// 将fileBuffer 转 imageBuffer
+	PCHAR pNewBuffer = NULL;
+	UINT32 newBufferSize = 0;
+	int result = fileBufferToImageBuffer(m_pBuffer, m_length, &pNewBuffer, &newBufferSize);
+	if (result < 0)
+	{
+		CloseHandle(hProcess);
+		CloseHandle(hThread);
+		return -5;
+	}
+
+	// 获取模块基址
+	INT_PTR image_base = 0;
+#if _WIN64
+	ReadProcessMemory(hProcess, LPCVOID(context.Rdx + 0x10), &image_base, 8, NULL);
+#else
+	ReadProcessMemory(hProcess, LPCVOID(context.Ebx + 8), &image_base, 4, NULL);
+#endif
+
+	// 卸载目标进程的旧模块,Win10的安全机制问题. 不让直接写exe内存位置. 先卸载,再申请空间写.
+	typedef long NTSTATUS;
+	typedef NTSTATUS(__stdcall* pfnZwUnmapViewOfSection)(HANDLE ProcessHandle, PVOID  BaseAddress);
+	HMODULE hModule = LoadLibrary(TEXT("ntdll.dll"));
+	pfnZwUnmapViewOfSection func = (pfnZwUnmapViewOfSection)GetProcAddress(hModule, "ZwUnmapViewOfSection");
+	NTSTATUS status = func(hProcess, (PVOID)image_base);  // 这是ntdll.dll 卸载模块的未导出函数
+	if (status < 0)
+	{
+		CloseHandle(hProcess);
+		CloseHandle(hThread);
+		free(pNewBuffer);
+		return -6;
+	}
+
+	// 申请新空间,并复制新模块到进程空间.
+	PCHAR pNew = (PCHAR)VirtualAllocEx(hProcess, (LPVOID)image_base, newBufferSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+	if (!pNew)
+	{
+		CloseHandle(hProcess);
+		CloseHandle(hThread);
+		free(pNewBuffer);
+		return -7;
+	}
+
+	if (!WriteProcessMemory(hProcess, (LPVOID)pNew, pNewBuffer, newBufferSize, NULL))
+	{
+		CloseHandle(hThread);
+		CloseHandle(hProcess);
+		free(pNewBuffer);
+		VirtualFreeEx(hProcess, (LPVOID)pNew, 0, MEM_RELEASE);
+		return -6;
+	}
+
+	PE_VAR_DEFINITION;
+	PE_VAR_ASSIGN(m_pBuffer);
+
+#ifdef _WIN64
+	context.Rcx = image_base + pNt64->OptionalHeader.AddressOfEntryPoint;
+#else
+	context.Eax = image_base + pNt32->OptionalHeader.AddressOfEntryPoint;
+#endif
+
+	context.ContextFlags = CONTEXT_FULL;	// 获取所有值.
+	if (!SetThreadContext(hThread, &context))
+	{
+		CloseHandle(hThread);
+		CloseHandle(hProcess);
+		free(pNewBuffer);
+		VirtualFreeEx(hProcess, (LPVOID)pNew, 0, MEM_RELEASE);
+		return -8;
+	}
+
+	ResumeThread(hThread);
+
+	free(pNewBuffer);
+
+	// 等待子进程结束
+	// WaitForSingleObject(hProcess, INFINITE);
+
+	CloseHandle(hThread);
+	CloseHandle(hProcess);
+
+	return 0;
+}
+
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
@@ -2704,8 +2841,7 @@ void CDialogPE::OnDlgPeMenuToFile()
 			AfxMessageBox(TEXT("文件转换失败"));
 			return;
 		}
-		m_isMemImage = 0;
-		mRefreshPage(pNewBuffer, newBufferSize);
+		mRefreshPage(pNewBuffer, newBufferSize,0);
 	}
 }
 
@@ -2722,8 +2858,7 @@ void CDialogPE::OnDlgPeMenuToImage()
 			AfxMessageBox(TEXT("文件转换失败"));
 			return;
 		}
-		m_isMemImage = 1;
-		mRefreshPage(pNewBuffer, newBufferSize);
+		mRefreshPage(pNewBuffer, newBufferSize,1);
 	}
 }
 
@@ -2784,15 +2919,10 @@ void CDialogPE::OnDlgPeMenuImportInject()
 	mCloseConsole();
 }
 
-// 测试按钮
+// 借壳执行按钮
 void CDialogPE::OnDlgPeMenuFakeShellExe()
 {
 	TCHAR text[256] = { 0 };
-	STARTUPINFO si;
-	PROCESS_INFORMATION pi;
-	ZeroMemory(&si, sizeof(si));
-	si.cb = sizeof(si);
-	ZeroMemory(&pi, sizeof(pi));
 
 	CHAR path[MAX_PATH] = { 0 };
 	mCreateConsole(TEXT("借壳执行"));
@@ -2802,70 +2932,22 @@ void CDialogPE::OnDlgPeMenuFakeShellExe()
 	mCloseConsole();
 	if (path[0] == 0)
 	{
-		_stprintf_s(text, 256, TEXT("路径为空"));
+		AfxMessageBox(TEXT("路径不能为空"));
 		return;
 	}
 	CString str;
 	str += path;
 
-	if (!CreateProcess(
-		str,
-		NULL,               // Command line
-		NULL,               // Process handle not inheritable
-		NULL,               // Thread handle not inheritable
-		FALSE,              // Set handle inheritance to FALSE
-		CREATE_NEW_CONSOLE | CREATE_SUSPENDED, //  子进程新建控制台.否则父子就用一个控制台,挂起形式创建
-		NULL,               // Use parent's environment block
-		NULL,               // Use parent's starting directory 
-		&si,                // Pointer to STARTUPINFO structure
-		&pi)                // Pointer to PROCESS_INFORMATION structure
-		)
-	{
-		_stprintf_s(text, 256, TEXT("CreateProcess失败: %d"), GetLastError());
-		AfxMessageBox(text);
-		return;
-	}
-	CloseHandle(pi.hProcess);
-	CloseHandle(pi.hThread);
 
-	// 打开进程
-	HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS | PROCESS_VM_OPERATION, FALSE, pi.dwProcessId);
-	if (!hProcess)
-	{
-		_stprintf_s(text, 256, TEXT("OpenProcess失败: %d"), GetLastError());
-		AfxMessageBox(text);
-		return;
-	}
-
-	HANDLE hThread = OpenThread(THREAD_ALL_ACCESS | THREAD_GET_CONTEXT | THREAD_SET_CONTEXT, false, pi.dwThreadId);
-	if (!hThread)
-	{
-		_stprintf_s(text, 256, TEXT("OpenThread失败: %d"), GetLastError());
-		AfxMessageBox(text);
-		return;
-	}
-
-	//定义线程信息结构体
-	CONTEXT context = { 0 };
-	// 设置获取类型:根据分组宏获取一组寄存器,根据这个复制来获取不同组的数据	
-	context.ContextFlags = CONTEXT_FULL;	// 获取所有值.
-	// 获取  线程上下文环境
-	BOOL ok = GetThreadContext(hThread, &context);
-	if (!ok)
-	{
-		_stprintf_s(text, 256, TEXT("GetThreadContext失败: %d"), GetLastError());
-		AfxMessageBox(text);
-		return;
-	}
-
+	int result;
 	PCHAR pNewBuffer = NULL;
 	UINT32 newBufferSize = 0;
-	if (!m_isMemImage)
+	if(m_isMemImage)
 	{
-		int result = fileBufferToImageBuffer(m_pBuffer, m_length, &pNewBuffer, &newBufferSize);
+		result = imageBufferToFileBuffer(m_pBuffer, m_length, &pNewBuffer, &newBufferSize);
 		if (result < 0)
 		{
-			AfxMessageBox(TEXT("转换失败"));
+			AfxMessageBox(TEXT("文件转换失败"));
 			return;
 		}
 	}
@@ -2875,65 +2957,92 @@ void CDialogPE::OnDlgPeMenuFakeShellExe()
 		newBufferSize = m_length;
 	}
 
-#if _WIN64
-	UINT64 image_base = 0;
-	ReadProcessMemory(hProcess, LPCVOID(context.Rdx + 0x10), &image_base, 8, NULL);
-	_stprintf_s(text, 256, TEXT("OEP : %016llx , PEB : %016llx, image_base : %016llx"), context.Rcx, context.Rdx, image_base);
-#else
-	DWORD image_base = 0;
-	ReadProcessMemory(hProcess, LPCVOID(context.Ebx + 8), &image_base, 4, NULL);
-	_stprintf_s(text, 256, TEXT("OEP : %08x , PEB : %08x, image_base : %08x"), context.Eax, context.Ebx, image_base);
-#endif
-
-	// 卸载目标进程的旧模块,Win10的安全机制问题. 不让直接写exe内存位置. 先卸载,再申请空间写.
-	typedef long NTSTATUS;
-	typedef NTSTATUS(__stdcall* pfnZwUnmapViewOfSection)(HANDLE ProcessHandle, PVOID  BaseAddress);
-	HMODULE hModule = LoadLibrary(TEXT("ntdll.dll"));
-	pfnZwUnmapViewOfSection func = (pfnZwUnmapViewOfSection)GetProcAddress(hModule, "ZwUnmapViewOfSection");
-	NTSTATUS status = func(hProcess, (PVOID)image_base);  // 这是ntdll.dll 卸载模块的未导出函数
-	if (status < 0)
+	result = mFakeShellRun(str, pNewBuffer, newBufferSize);
+	if (result < 0)
 	{
-		_stprintf_s(text, 256, TEXT("ZwUnmapViewOfSection失败: %d"), status);
-		AfxMessageBox(text);
-		return;
+		AfxMessageBox(TEXT("执行失败"));
 	}
+	else
+		AfxMessageBox(TEXT("执行成功"));
+}
 
-	PCHAR pNew = (PCHAR)VirtualAllocEx(hProcess, (LPVOID)image_base, newBufferSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-	BOOL b = WriteProcessMemory(hProcess, (LPVOID)pNew, pNewBuffer, newBufferSize, NULL);
-	if (!b)
-	{
-		_stprintf_s(text, 256, TEXT("WriteProcessMemory失败: %d"), GetLastError());
-		AfxMessageBox(text);
-		return;
-	}
+// 添加壳按钮
+void CDialogPE::OnDlgPeMenuAddShell()
+{
+	int result;
 
+
+	// 获取壳子文件
+	CStringA strPathA;
+	CHAR curDir[MAX_PATH] = { 0 };
+	GetCurrentDirectoryA( MAX_PATH, curDir);
+	strPathA = curDir;
 	PE_VAR_DEFINITION;
 	PE_VAR_ASSIGN(m_pBuffer);
 
-#ifdef _WIN64
-	context.Rcx = image_base + pNt64->OptionalHeader.AddressOfEntryPoint;
-#else
-	context.Eax = image_base + pNt32->OptionalHeader.AddressOfEntryPoint;
-#endif
+	strPathA += FILE_SHELL_PATH;
+	if (isX64(p))
+		strPathA += "x64\\";
+	else
+		strPathA += "x86\\";
 
-	context.ContextFlags = CONTEXT_FULL;	// 获取所有值.
-	SetThreadContext(hThread, &context);
+	strPathA += FILE_SHELL_NAME;
 
+	PCHAR pBufferShell = NULL;
+	int shellBufferSize = 0;
+	result = mGetFileData(strPathA.GetString(), &pBufferShell, &shellBufferSize);
+	if (result < 0)
+	{
+		AfxMessageBox(TEXT("获取壳文件失败"));
+		return;
+	}
 
-	ResumeThread(hThread);
+	// 获取exe文件
+	PCHAR pBufferExe = NULL;
+	UINT32 exeBufferSize = 0;
+	if (m_isMemImage)
+	{
+		result = imageBufferToFileBuffer(m_pBuffer, m_length, &pBufferExe, &exeBufferSize);
+		if (result < 0)
+		{
+			free(pBufferShell);
+			AfxMessageBox(TEXT("文件转换失败"));
+			return;
+		}
+	}
+	else
+	{
+		pBufferExe = m_pBuffer;
+		exeBufferSize = m_length;
+	}
 
-	// 等待子进程结束
-	WaitForSingleObject(hProcess, INFINITE);
+	// 将exe文件添加到壳文件新增的节中.
+	PCHAR pNewBuffer = NULL;
+	UINT32 newBufferSize = 0;
+	result = shellFileBufferApendExeFileBuffer(pBufferShell, shellBufferSize, pBufferExe, exeBufferSize, &pNewBuffer, &newBufferSize);
+	if (result < 0)
+	{
+		free(pBufferShell);
+		if (m_isMemImage)
+			free(pBufferExe);
+		AfxMessageBox(TEXT("添加壳失败"));
+		return;
+	}
 
-	printf("over\n");
+	// 刷新界面
+	mRefreshPage(pNewBuffer, newBufferSize,0);
 
-	CloseHandle(hProcess);
-	CloseHandle(hThread);
+	free(pBufferShell);
+	if (m_isMemImage)
+		free(pBufferExe);
 }
-
-
 
 
 void CDialogPE::OnDlgPeMenuTest()
 {
+	int a = getExportItemRvaByNameInFileBuffer(m_pBuffer, "EntryFunc");
+	a = 1;
 }
+
+
+

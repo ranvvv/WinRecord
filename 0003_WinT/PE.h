@@ -164,6 +164,15 @@ extern "C" {
 	INT32 relocateImageBuffer(PCHAR pBuffer, UINT64 newBase);
 
 
+	// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+	//	¼Ó¿Ç
+
+	// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+	int shellFileBufferApendExeFileBuffer(PCHAR pShellBuffer, UINT32 shellBufferSize, PCHAR pExeBuffer, UINT32 exeBufferSize, PCHAR* ppNewBufferOut, UINT32* pNewBufferSizeOut);
+
+
 #ifdef __cplusplus
 }
 #endif
