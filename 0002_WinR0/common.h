@@ -11,6 +11,15 @@
 
 
 
-UINT32 mAddIDTDescriptorx86(UINT64 descriptor);
-UINT32 mAddGDTDescriptorx86(UINT64 descriptor);
+#ifdef _WIN64
+
+#else
+#include"000_000_保护模式x86.h"
+#endif
+
+
+
+
+
+
 

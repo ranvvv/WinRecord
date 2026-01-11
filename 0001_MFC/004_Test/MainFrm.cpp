@@ -1,11 +1,6 @@
-﻿
-// MainFrm.cpp: CMainFrame 类的实现
-//
-
-#include "pch.h"
+﻿#include "pch.h"
 #include "framework.h"
 #include "Test.h"
-
 #include "MainFrm.h"
 
 #ifdef _DEBUG
@@ -62,15 +57,15 @@ void CMainFrame::Dump(CDumpContext& dc) const
 
 void CMainFrame::OnNcLButtonDown(UINT nHitTest, CPoint point)
 {
-	if (nHitTest == HTCAPTION )
-	{
-		MessageBox(_T("你点击了标题栏"), _T("提示"), MB_OK);
-	}
+	//if (nHitTest == HTCAPTION )
+	//{
+	//	MessageBox(_T("你点击了标题栏"), _T("提示"), MB_OK);
+	//}
 
-	if (nHitTest == HTCLOSE)
-	{
-		MessageBox(_T("你点击了关闭按钮"), _T("提示"), MB_OK);
-	}
+	//if (nHitTest == HTCLOSE)
+	//{
+	//	MessageBox(_T("你点击了关闭按钮"), _T("提示"), MB_OK);
+	//}
 
 	CFrameWnd::OnNcLButtonDown(nHitTest, point);
 }

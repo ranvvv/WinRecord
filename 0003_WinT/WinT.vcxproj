@@ -201,6 +201,7 @@
   <ItemGroup>
     <ClInclude Include="CDialogInput.h" />
     <ClInclude Include="CDialogPE.h" />
+    <ClInclude Include="CDialogProcess.h" />
     <ClInclude Include="CDialogSection.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="framework.h" />
@@ -214,6 +215,7 @@
   <ItemGroup>
     <ClCompile Include="CDialogInput.cpp" />
     <ClCompile Include="CDialogPE.cpp" />
+    <ClCompile Include="CDialogProcess.cpp" />
     <ClCompile Include="CDialogSection.cpp" />
     <ClCompile Include="Common.cpp" />
     <ClCompile Include="pch.cpp">

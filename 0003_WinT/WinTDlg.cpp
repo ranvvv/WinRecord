@@ -4,11 +4,12 @@
 #include "WinTDlg.h"
 #include "afxdialogex.h"
 #include "CDialogPE.h"
+#include "CDialogProcess.h"
 #include "Common.h"
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-// 主界面对话框类
+// 主界面对话框
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
@@ -19,24 +20,22 @@
 BEGIN_MESSAGE_MAP(CWinTDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_BN_CLICKED(IDC_BUTTON_PE, &CWinTDlg::OnBnClickedButtonPe)
 	ON_WM_DROPFILES()
+	// PE 按钮事件
+	ON_BN_CLICKED(IDC_BUTTON_WINT_DLG_PE, &CWinTDlg::OnBnClickedButtonPe)
+	// 进程按钮事件
+	ON_BN_CLICKED(IDC_BUTTON_WINT_DLG_PROCESS, &CWinTDlg::OnBnClickedButtonWintDlgProcess)
 END_MESSAGE_MAP()
 
-// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-
-// 构造与析构
-
-// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 CWinTDlg::CWinTDlg(CWnd* pParent /*=nullptr*/) : CDialogEx(IDD_WINT_DLG, pParent)
 {
-	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_hIcon = AfxGetApp()->LoadIcon(ICON_MAINFRAME);
 }
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-// 消息处理
+// 事件处理
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
@@ -44,12 +43,11 @@ BOOL CWinTDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	// 设置此对话框的图标。  当应用程序主窗口不是对话框时，框架将自动
-	//  执行此操作
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-	OnBnClickedButtonPe();
+	// OnBnClickedButtonPe();
+	// OnBnClickedButtonWintDlgProcess();
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -59,7 +57,7 @@ void CWinTDlg::OnPaint()
 {
 	if (IsIconic())
 	{
-		CPaintDC dc(this); // 用于绘制的设备上下文
+		CPaintDC dc(this); 
 
 		SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
 
@@ -88,19 +86,20 @@ HCURSOR CWinTDlg::OnQueryDragIcon()
 // PE文件分析
 void CWinTDlg::OnBnClickedButtonPe()
 {	
+#if 0
 	// 正式代码
-	/*
+
 	CFileDialog dlgFile(TRUE, NULL, NULL, OFN_HIDEREADONLY, _T("PE文件|*.*||"), NULL);
 	if (dlgFile.DoModal() != IDOK)
 		return;
 	CStringA strPathA(dlgFile.GetPathName());
 	if (strPathA.IsEmpty())
 		return;
-	*/
-
+#else
 	// 测试代码
 	CStringA strPathA = "G:\\code\\WinRecord\\0003_WinT\\dist\\WinT.exe";// 测试代码
 	//CStringA strPathA = "f:\\b.dll";
+#endif
 
 	char* pBuffer = NULL;
 	int nSize = 0;
@@ -152,5 +151,11 @@ void CWinTDlg::OnDropFiles(HDROP hDropInfo)
 	DragFinish(hDropInfo);
 }
 
-
-
+// 进程分析
+void CWinTDlg::OnBnClickedButtonWintDlgProcess()
+{
+	CDialogProcess* pProcess = new CDialogProcess();
+	pProcess->Create(IDD_PROCESS_DLG, this);
+	pProcess->ShowWindow(SW_SHOW);
+	pProcess->UpdateData(FALSE);
+}

@@ -2,7 +2,7 @@
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-// 主界面对话框类
+// 主界面对话框
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
@@ -17,7 +17,7 @@ class CWinTDlg : public CDialogEx
 public:
 	HICON m_hIcon;
 public:
-	CWinTDlg(CWnd* pParent = nullptr);	// 标准构造函数
+	CWinTDlg(CWnd* pParent = nullptr);	
 
 protected:
 	afx_msg virtual BOOL OnInitDialog();
@@ -25,4 +25,5 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	afx_msg void OnBnClickedButtonPe();
 	afx_msg void OnDropFiles(HDROP hDropInfo);
+	afx_msg void OnBnClickedButtonWintDlgProcess();
 };

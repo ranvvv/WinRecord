@@ -2,16 +2,15 @@
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-// PE分析对话框类
+// PE分析对话框
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-
-
 class CDialogPE : public CDialogEx
 {
-	// 用来记录高亮显示的位置和长度,方便在hex中高亮显示
-	struct INFO_POSITION {
+	// 内部类: 用来记录高亮显示的位置和长度,方便在hex中高亮显示
+	struct INFO_POSITION 
+	{
 		UINT32 offset;
 		UINT32 length;
 	};
@@ -26,8 +25,8 @@ class CDialogPE : public CDialogEx
 private:
 	// 文件数据信息
 	PCHAR m_pBuffer;					// 缓冲区指针
-	int m_length;						// 缓冲区长度
-	UINT32 m_isMemImage;				// 是否内存镜像
+	int m_bufferSize;					// 缓冲区长度
+	UINT32 m_isImageBuffer;				// 是否内存镜像
 	CString m_path;						// 文件路径
 	BOOL m_isDirty;						// 是否修改过
 	UINT32 m_validPEFlags;				// 是否正确的PE文件: 按位标记  0:文件大小或指纹,1:DOS头,2:NT头,3:节表,4:数据目录
@@ -60,31 +59,31 @@ private:
 
 
 public:
-	CDialogPE(PCHAR pBuffer,UINT32 length,UINT32 isMemImage = 0, CString path = NULL, CWnd* pParent = nullptr);   // 标准构造函数
+	CDialogPE(PCHAR pBuffer,UINT32 bufferSize,UINT32 isImageBuffer = 0, CString path = NULL, CWnd* pParent = nullptr);   // 标准构造函数
 	virtual ~CDialogPE();
 
 	virtual BOOL OnInitDialog();
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
-	virtual void OnCancel();
-	virtual void PostNcDestroy();
-
-private:
-	afx_msg void OnDlgPeMenuTest();
-	afx_msg void OnDlgPeMenuSwitch();
-	afx_msg void OnDlgPeMenuSave();
-	afx_msg void OnDlgPeMenuToFile();
-	afx_msg void OnDlgPeMenuToImage();
-	afx_msg void OnDlgPeMenuImportInject();
-	afx_msg void OnDlgPeMenuFakeShellExe();
-
 	afx_msg void OnPaint();
-	afx_msg void OnTreeCtrlSelectChange(NMHDR* pNMHDR, LRESULT* pResult);
-	afx_msg void OnListCtrlSelectMenu(NMHDR* pNMHDR, LRESULT* pResult);
-	afx_msg void OnListCtrlSelectChange(NMHDR* pNMHDR, LRESULT* pResult);
-	afx_msg void OnButtonClickDataDirectory(UINT id);
-	afx_msg void OnSectionModify();
-	afx_msg void OnSectionAdd();
-	afx_msg void OnSectionMerge();
+	afx_msg virtual void OnCancel();
+	afx_msg virtual void PostNcDestroy();
+
+	afx_msg void OnMenuTest();
+	afx_msg void OnMenuSwitchShowFlag();
+	afx_msg void OnMenuSave();
+	afx_msg void OnMenuImageToFile();
+	afx_msg void OnMenuFileToImage();
+	afx_msg void OnMenuImportInject();
+	afx_msg void OnMenuFakeShellExe();
+	afx_msg void OnMenuAddShell();
+	afx_msg void OnMenuModifySection();
+	afx_msg void OnMenuAddSection();
+	afx_msg void OnMenuMergeSection();
+
+	afx_msg void OnTreeCtrlHeaderInfoSelectChange(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnListCtrlSectionSelectMenu(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnListCtrlSectionSelectChange(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnButtonDataDirectoryClick(UINT id);
 
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
@@ -98,10 +97,10 @@ private:
 	int mAnalyzeSectionInfo();							// 分析section信息
 	int mAnalyzeTableInfo();							// 分析table信息
 	int mAnalyzePEFile();								// 分析PE文件信息 : 分析header,section,table信息
-	int mRefreshPage(char* pNewBuffer=NULL,int len=0,int isMemImage = 0);	// 刷新页面,可更新缓冲区
+	int mRefreshPage(char* pNewBuffer,int bufferSize,int isMemImage);	// 刷新页面,可更新缓冲区
 	int mSwitchShowFlag(int showFlag);					// 切换显示标志
 	int mDrawHex(CPaintDC* pDc);						// 绘制hex
-	int mSetScrollBarHex();								// 设置滚动条hex
+	int mSetScrollBarHexInfo();								// 设置滚动条hex
 	int mSetHexBegin(int hexBegin);						// 设置hex显示的起始位置
 	int mGetPageRange();								// 获取页面范围
 	int mSetHexBeginColored(int begin, int length);		// 设置hex显示的起始位置,带背景色
@@ -123,15 +122,7 @@ private:
 	void mGetPEIATTableInfo();							// 获取IAT表信息
 	void mGetPEDelayLoadImportTableInfo();				// 获取延迟加载导入表信息
 	void mGetPEComTableInfo();							// 获取COM表信息
-
 	int mFakeShellRun(CString shellPath,PCHAR pBufferExe,UINT32 sizeofBufferExe);	// 借壳执行
-
-
-
-
-
-public:
-	afx_msg void OnDlgPeMenuAddShell();
 };
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$

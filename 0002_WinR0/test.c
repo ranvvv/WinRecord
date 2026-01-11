@@ -7,7 +7,7 @@ NTSTATUS run()
 #ifdef _WIN64
 
 #else
-	p000_004();
+	p000_010();
 #endif
 	return STATUS_SUCCESS;
 }

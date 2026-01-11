@@ -48,6 +48,9 @@
     <ClInclude Include="CDialogInput.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="CDialogProcess.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WinT.cpp">
@@ -72,6 +75,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="CDialogInput.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CDialogProcess.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

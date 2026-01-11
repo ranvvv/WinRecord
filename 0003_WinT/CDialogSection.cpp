@@ -5,7 +5,7 @@
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-// 节操作对话框类
+// 节操作对话框
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
@@ -15,11 +15,6 @@ BEGIN_MESSAGE_MAP(CDialogSection, CDialogEx)
 	ON_BN_CLICKED(IDC_SECTION_DLG_OK, &CDialogSection::OnBnClickedSectionDlgOk)
 END_MESSAGE_MAP()
 
-// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-
-// 构造函数, 析构函数
-
-// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 CDialogSection::CDialogSection(BOOL isModify, CString& name, CString& size, CString& charac, CWnd* pParent /*=nullptr*/) : m_isModify(isModify), m_name(name), m_size(size), m_charac(charac), CDialogEx(IDD_SECTION_DLG, pParent)
 {	
@@ -32,7 +27,7 @@ CDialogSection::~CDialogSection()
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-// 消息处理
+// 事件处理
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 

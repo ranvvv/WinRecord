@@ -176,6 +176,10 @@
     <FilesToPackage Include="$(TargetPath)" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="000_007_101012分页.c" />
+    <ClCompile Include="000_008_29912分页.c" />
+    <ClCompile Include="000_009_page.c" />
+    <ClCompile Include="000_010_TLB.c" />
     <ClCompile Include="000_保护模式\000_000_段寄存器.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -196,6 +200,7 @@
     <ClCompile Include="main.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="000_000_保护模式x86.h" />
     <ClInclude Include="common.h" />
     <ClInclude Include="order_function.h" />
   </ItemGroup>

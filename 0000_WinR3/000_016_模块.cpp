@@ -33,6 +33,7 @@ static void s1()
 		return;
 	}
 
+	// 通过EnumProcessModulesEx 获取模块句柄数组
 	if (EnumProcessModulesEx(hProcess, hMods, sizeof(hMods), &cbNeeded, LIST_MODULES_ALL))
 	{
 		for (i = 0; i < (cbNeeded / sizeof(HMODULE)); i++)
@@ -48,7 +49,7 @@ static void s1()
 	CloseHandle(hProcess);
 
 
-	// 进程中拍一个所有模块的快照
+	// 使用CreateToolhelp32Snapshot 创建模块快照，然后遍历它
 	HANDLE hModuleSnap = ::CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, 0);
 	if (hModuleSnap == INVALID_HANDLE_VALUE)
 		return;

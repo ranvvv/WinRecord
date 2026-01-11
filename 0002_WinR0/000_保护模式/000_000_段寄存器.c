@@ -14,7 +14,7 @@
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 #if 0
-static void s3R3()
+static void s1_R3()
 {
 	int var;
 
@@ -83,19 +83,20 @@ static void s2()
 
 		// ×¨ÓÃÖ¸Áî
 		sldt ax;
-		mov[SegLdtr], ax
-			str ax;
-		mov[SegTr], ax
+		mov[SegLdtr], ax;
+		str ax;
+		mov[SegTr], ax;
 	}
 
-	DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "CPU ¶Î¼Ä´æÆ÷: es:%04X cs:%04X ss:%04X ds:%04X fs:%04X gs:%04X ldtr:%04X tr:%04X\n",
+	DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, 
+		"CPU ¶Î¼Ä´æÆ÷: es:%04X cs:%04X ss:%04X ds:%04X fs:%04X gs:%04X ldtr:%04X tr:%04X\n",
 		SegEs, SegCs, SegSs, SegDs, SegFs, SegGs, SegLdtr, SegTr);
 
 
 	// Ð´¶Î¼Ä´æÆ÷
 	char tmp[6] = { 0 };
-	UINT32 var_1;
-	short SegGs_1, SegGs_2;
+	UINT32 var_1 = 0;
+	short SegGs_1 = 0, SegGs_2 = 0;
 	__asm
 	{
 		// movÐ´¶Î¼Ä´æÆ÷

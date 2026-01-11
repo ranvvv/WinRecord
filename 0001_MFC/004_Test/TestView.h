@@ -1,47 +1,40 @@
-﻿
-// TestView.h: CTestView 类的接口
-//
-
-#pragma once
+﻿#pragma once
 
 
 class CTestView : public CView
 {
+	CStatic m_static;
+	CEdit m_edit;
+	CTreeCtrl m_tree;
+	CListCtrl m_list;
+	CButton m_button;
+	CScrollBar m_scrollbar;
+
 protected: // 仅从序列化创建
-	CTestView() noexcept;
 	DECLARE_DYNCREATE(CTestView)
+	DECLARE_MESSAGE_MAP()
 
-// 特性
-public:
-	CTestDoc* GetDocument() const;
-
-// 操作
-public:
-
-// 重写
-public:
-	virtual void OnDraw(CDC* pDC);  // 重写以绘制该视图
-	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
-protected:
-
-// 实现
-public:
-	virtual ~CTestView();
 #ifdef _DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 
-protected:
+	CTestView() noexcept;
+	virtual ~CTestView();
 
-// 生成的消息映射函数
-protected:
-	DECLARE_MESSAGE_MAP()
+	CTestDoc* GetDocument() const;
+	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
+
 public:
+	virtual void OnDraw(CDC* pDC);  // 重写以绘制该视图
 	afx_msg void OnPaint();
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg void OnNcLButtonDown(UINT nHitTest, CPoint point);
+	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
+	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+	void mDoubleBuffering();
+	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 };
 
 #ifndef _DEBUG  // TestView.cpp 中的调试版本
@@ -49,3 +42,10 @@ inline CTestDoc* CTestView::GetDocument() const
    { return reinterpret_cast<CTestDoc*>(m_pDocument); }
 #endif
 
+
+#define ID_STATIC 1000
+#define ID_EDIT 1001
+#define ID_TREE 1002
+#define ID_LIST 1003
+#define ID_BUTTON 1004
+#define ID_SCROLLBAR 1005

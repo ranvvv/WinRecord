@@ -116,6 +116,13 @@ static void s2()
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
+BOOL Is64BitSystem()
+{
+    SYSTEM_INFO si = { 0 };
+    GetNativeSystemInfo(&si); // 注意：用GetNativeSystemInfo而非GetSystemInfo，获取真实系统位数
+    return (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64);
+}
+
 static void s3()
 {
     int a = GetSystemMetrics(SM_CXFULLSCREEN);		// 主显示器宽度

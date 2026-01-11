@@ -203,15 +203,133 @@ void s1()
     WaitForSingleObject(hThreadServer, INFINITE);
 }
 
+// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+//				2. 匿名管道
+
+// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+#if 0
+#include <windows.h>
+#include <stdio.h>
+#include <tchar.h>
+
+// 管道缓冲区大小
+#define BUFSIZE 4096
+
+// 错误处理宏
+#define CHECK_ERROR(expr, msg) \
+    if (!(expr)) { \
+        printf(msg, GetLastError()); \
+        goto Cleanup; \
+    }
+
+int _tmain(int argc, TCHAR* argv[])
+{
+    // 1. 定义管道句柄（双向通信需要两个管道）
+    HANDLE hParentWritePipe = NULL;  // 父写 -> 子读
+    HANDLE hParentReadPipe = NULL;   // 父读 <- 子写
+    HANDLE hChildReadPipe = NULL;    // 子读 <- 父写
+    HANDLE hChildWritePipe = NULL;   // 子写 -> 父读
+
+    // 2. 定义进程相关结构
+    PROCESS_INFORMATION piProcInfo = { 0 };
+    STARTUPINFO siStartInfo = { 0 };
+    BOOL bSuccess = FALSE;
+    DWORD dwRead, dwWritten;
+    CHAR chReadBuf[BUFSIZE] = { 0 };
+    CHAR chWriteBuf[] = "父进程：你好，子进程！";
+
+    // 3. 创建第一个管道（父写子读）
+    SECURITY_ATTRIBUTES saAttr = { 0 };
+    saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+    saAttr.bInheritHandle = TRUE;  // 允许句柄继承（关键）
+    saAttr.lpSecurityDescriptor = NULL;
+
+    CHECK_ERROR(CreatePipe(&hChildReadPipe, &hParentWritePipe, &saAttr, 0),
+        "创建父写子读管道失败，错误码：%d\n");
+
+    // 4. 创建第二个管道（子写父读）
+    CHECK_ERROR(CreatePipe(&hParentReadPipe, &hChildWritePipe, &saAttr, 0),
+        "创建子写父读管道失败，错误码：%d\n");
+
+    // 5. 设置子进程的启动信息（重定向标准输入/输出）
+    siStartInfo.cb = sizeof(STARTUPINFO);
+    siStartInfo.hStdInput = hChildReadPipe;    // 子进程标准输入 = 父写子读管道的读端
+    siStartInfo.hStdOutput = hChildWritePipe;  // 子进程标准输出 = 子写父读管道的写端
+    siStartInfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+    siStartInfo.dwFlags |= STARTF_USESTDHANDLES;  // 启用标准句柄重定向
+
+    // 6. 创建子进程（子进程是当前程序本身，通过参数区分父子）
+    TCHAR szCmdline[] = _T("ChildProcess.exe");  // 子进程可执行文件（需编译为同名exe）
+    // 若要调试，可改为当前程序路径，通过 argc 判断：if (argc > 1) 则为子进程逻辑
+    CHECK_ERROR(CreateProcess(NULL, szCmdline, NULL, NULL, TRUE, 0, NULL, NULL, &siStartInfo, &piProcInfo),
+        "创建子进程失败，错误码：%d\n");
+
+    // ====================== 父进程逻辑 ======================
+    printf("父进程：开始向子进程发送消息...\n");
+    // 7. 父进程向子进程写入数据
+    CHECK_ERROR(WriteFile(hParentWritePipe, chWriteBuf, lstrlenA(chWriteBuf), &dwWritten, NULL),
+        "父进程写入管道失败，错误码：%d\n");
+    printf("父进程：已发送消息：%s\n", chWriteBuf);
+
+    // 8. 父进程读取子进程的回复
+    CHECK_ERROR(ReadFile(hParentReadPipe, chReadBuf, BUFSIZE, &dwRead, NULL),
+        "父进程读取管道失败，错误码：%d\n");
+    printf("父进程：收到子进程回复：%s\n", chReadBuf);
+
+    bSuccess = TRUE;
+
+Cleanup:
+    // 9. 关闭所有句柄（避免资源泄漏）
+    if (hParentWritePipe) CloseHandle(hParentWritePipe);
+    if (hParentReadPipe) CloseHandle(hParentReadPipe);
+    if (hChildReadPipe) CloseHandle(hChildReadPipe);
+    if (hChildWritePipe) CloseHandle(hChildWritePipe);
+    if (piProcInfo.hProcess) CloseHandle(piProcInfo.hProcess);
+    if (piProcInfo.hThread) CloseHandle(piProcInfo.hThread);
+
+    if (!bSuccess)
+        return 1;
+
+    return 0;
+}
+
+// ====================== 子进程逻辑（单独编译为 ChildProcess.exe） ======================
+// 也可在同一个程序中通过参数区分，比如：if (argc > 1) 执行子进程逻辑
+int ChildMain()
+{
+    CHAR chReadBuf[BUFSIZE] = { 0 };
+    CHAR chWriteBuf[] = "子进程：收到消息，你好父进程！";
+    DWORD dwRead, dwWritten;
+    HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);   // 子进程标准输入 = 父写子读管道
+    HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE); // 子进程标准输出 = 子写父读管道
+
+    // 1. 子进程读取父进程发送的数据
+    if (!ReadFile(hStdin, chReadBuf, BUFSIZE, &dwRead, NULL)) {
+        printf("子进程读取管道失败，错误码：%d\n", GetLastError());
+        return 1;
+    }
+    printf("子进程：收到父进程消息：%s\n", chReadBuf);
+
+    // 2. 子进程向父进程回复数据
+    if (!WriteFile(hStdout, chWriteBuf, lstrlenA(chWriteBuf), &dwWritten, NULL)) {
+        printf("子进程写入管道失败，错误码：%d\n", GetLastError());
+        return 1;
+    }
+
+    return 0;
+}
+#endif
 
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-//				2. 剪切板
+//				3. 剪切板
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-static void s2()
+static void s3()
 {
     // =========================== 剪切板写入
     const char* text = "Hello, 222Clipboard111!";

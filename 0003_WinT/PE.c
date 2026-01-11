@@ -284,7 +284,7 @@ int result;
 PCHAR pBufferImage;
 UINT32 sizeBufferImage;
 
-result = fileBufferToImageBuffer(m_pBuffer, m_length, &pBufferImage, &sizeBufferImage);
+result = fileBufferToImageBuffer(m_pBuffer, m_bufferSize, &pBufferImage, &sizeBufferImage);
 if (result < 0)
 	return;
 
@@ -783,7 +783,7 @@ if (totalSize != 0)
 {
 	PCHAR pNewBuffer;
 	UINT32 newBufferSize = 0;
-	int result = addSectionInFileBuffer(m_pBuffer, m_length, "newsec", totalSize, 0xE00000E0, &pNewBuffer, &newBufferSize);
+	int result = addSectionInFileBuffer(m_pBuffer, m_bufferSize, "newsec", totalSize, 0xE00000E0, &pNewBuffer, &newBufferSize);
 	if (result < 0)
 	{
 		AfxMessageBox(TEXT("移动导出表失败"));
@@ -967,7 +967,7 @@ if (totalSize != 0)
 {
 	PCHAR pNewBuffer;
 	UINT32 newBfferSize;
-	int result = addSectionInFileBuffer(m_pBuffer, m_length, "newsec", totalSize, 0xE00000E0, &pNewBuffer, &newBfferSize);
+	int result = addSectionInFileBuffer(m_pBuffer, m_bufferSize, "newsec", totalSize, 0xE00000E0, &pNewBuffer, &newBfferSize);
 	if (result < 0)
 	{
 		AfxMessageBox(TEXT("移动导入表失败"));
@@ -1153,8 +1153,8 @@ int importTableInjectionByNumberInFileBuffer(PCHAR pBuffer, UINT32 bufferSize, P
 #if 0
 PCHAR pNewBuffer = NULL;
 UINT32 newBufferSize = 0;
-//int result = importTableInjectionByNameInFileBuffer(m_pBuffer, m_length,"ttt.dll", "ceshi",&pNewBuffer, &newBufferSize);
-int result = importTableInjectionByNumberInFileBuffer(m_pBuffer, m_length, "ttt.dll", 11, &pNewBuffer, &newBufferSize);
+//int result = importTableInjectionByNameInFileBuffer(m_pBuffer, m_bufferSize,"ttt.dll", "ceshi",&pNewBuffer, &newBufferSize);
+int result = importTableInjectionByNumberInFileBuffer(m_pBuffer, m_bufferSize, "ttt.dll", 11, &pNewBuffer, &newBufferSize);
 #endif
 
 // 根据导入表修复IAT
@@ -1288,7 +1288,7 @@ int result;
 PCHAR pBufferImage;
 UINT32 sizeBufferImage;
 
-result = fileBufferToImageBuffer(m_pBuffer, m_length, &pBufferImage, &sizeBufferImage);
+result = fileBufferToImageBuffer(m_pBuffer, m_bufferSize, &pBufferImage, &sizeBufferImage);
 if (result < 0)
 	return;
 

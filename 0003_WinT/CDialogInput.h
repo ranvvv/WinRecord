@@ -1,5 +1,11 @@
 ﻿#pragma once
 
+// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+// 输入对话框
+
+// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
 
 class CDialogInput : public CDialogEx
 {
@@ -12,8 +18,8 @@ class CDialogInput : public CDialogEx
 
 
 private:
-	CString m_title;
-	CString& m_str;
+	CString m_title;		// 标题
+	CString& m_str;			// 输入内容饮用
 
 public:
 	CDialogInput(CString title,CString& str,CWnd* pParent = nullptr);  

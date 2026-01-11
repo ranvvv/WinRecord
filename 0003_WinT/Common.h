@@ -5,5 +5,5 @@ int mGetFileData(const char* path, char** ppBuffer, int* pSize);		// ¶ÁÈ¡ÎÄ¼þµ½»
 int mSaveFileData(const char* path, const char* pBuffer, int size);		// ±£´æ»º³åÇøµ½ÎÄ¼þ
 
 
-int mCreateConsole(const TCHAR title[]);
-void mCloseConsole();
+int mCreateConsole(const TCHAR title[]);	// ´´½¨¿ØÖÆÌ¨´°¿Ú
+void mCloseConsole();						// ¹Ø±Õ¿ØÖÆÌ¨´°¿Ú

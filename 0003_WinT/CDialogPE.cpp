@@ -1,5 +1,4 @@
 ﻿#include<windows.h>
-
 #include "pch.h"
 #include "WinT.h"
 #include "CDialogPE.h"
@@ -13,67 +12,63 @@
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-// PE分析对话框类
+// PE分析对话框
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 IMPLEMENT_DYNAMIC(CDialogPE, CDialogEx)
 
 BEGIN_MESSAGE_MAP(CDialogPE, CDialogEx)
-	// CButton控件 : 点击事件
-	ON_COMMAND_RANGE(CBUTTON_TABLE_ID_BEGIN, CBUTTON_TABLE_ID_BEGIN + 15, &CDialogPE::OnButtonClickDataDirectory)
-	// CListCtrl Section控件 : 右键点击
-	ON_NOTIFY(NM_RCLICK, CLIST_SECTION_ID, OnListCtrlSelectMenu)
+	// 快捷键: 跳转到
+	ON_COMMAND(ID_HEX_GOTO, OnHexGoto)
+	// 菜单项: 切换界面显示项
+	ON_COMMAND(ID_DLG_PE_MENU_SWITCH, OnMenuSwitchShowFlag)
 	// 菜单项: 修改节
-	ON_COMMAND(ID_SECTION_MODIFY, &CDialogPE::OnSectionModify)
+	ON_COMMAND(ID_SECTION_MODIFY, OnMenuModifySection)
 	// 菜单项: 添加节
-	ON_COMMAND(ID_SECTION_ADD, &CDialogPE::OnSectionAdd)
+	ON_COMMAND(ID_SECTION_ADD, OnMenuAddSection)
 	// 菜单项: 合并节
-	ON_COMMAND(ID_SECTION_MERGE, &CDialogPE::OnSectionMerge)
+	ON_COMMAND(ID_SECTION_MERGE, OnMenuMergeSection)
 	// 菜单项: 测试按钮
-	ON_COMMAND(ID_DLG_PE_MENU_TEST, &CDialogPE::OnDlgPeMenuTest)
+	ON_COMMAND(ID_DLG_PE_MENU_TEST, OnMenuTest)
+	// 菜单项: 保存文件
+	ON_COMMAND(ID_DLG_PE_MENU_SAVE, OnMenuSave)
+	// 菜单项: Image 转 file
+	ON_COMMAND(ID_DLG_PE_MENU_TO_FILE, OnMenuImageToFile)
+	// 菜单项: file 转 Image
+	ON_COMMAND(ID_DLG_PE_MENU_TO_IMAGE, OnMenuFileToImage)
+	// 菜单项: 注入导入表
+	ON_COMMAND(ID_DLG_PE_MENU_IMPORT_INJECT, OnMenuImportInject)
+	// 菜单项: 借壳执行
+	ON_COMMAND(ID_DLG_PE_MENU_FAKE_SHELL_EXE, OnMenuFakeShellExe)
+	// 菜单项: 加壳
+	ON_COMMAND(ID_DLG_PE_MENU_ADD_SHELL, OnMenuAddShell)
+	// CButton控件 : 点击事件
+	ON_COMMAND_RANGE(CBUTTON_TABLE_ID_BEGIN, CBUTTON_TABLE_ID_BEGIN + 15, OnButtonDataDirectoryClick)
+	// CListCtrl Section控件 : 右键点击
+	ON_NOTIFY(NM_RCLICK, CLIST_SECTION_ID, OnListCtrlSectionSelectMenu)
+	// CTreeCtrl Header : 选中改变事件
+	ON_NOTIFY(TVN_SELCHANGED, CTREE_HEADER_ID, OnTreeCtrlHeaderInfoSelectChange)
+	// CListCtrl Section: 选中改变事件
+	ON_NOTIFY(NM_CLICK, CLIST_SECTION_ID, OnListCtrlSectionSelectChange)
 	// 绘图
 	ON_WM_PAINT()
 	// 鼠标滚轮
 	ON_WM_MOUSEHWHEEL()
-	// 混动条
+	// 滚动条
 	ON_WM_VSCROLL()
 	// 鼠标滚轮滚动
 	ON_WM_MOUSEWHEEL()
 	// 擦除背景
 	ON_WM_ERASEBKGND()
-	// 快捷键: 跳转到
-	ON_COMMAND(ID_HEX_GOTO, &CDialogPE::OnHexGoto)
-	// CTreeCtrl 控件 : 选中改变事件
-	ON_NOTIFY(TVN_SELCHANGED, CTREE_HEADER_ID, OnTreeCtrlSelectChange)
-	// CListCtrl控件 : 选中改变事件
-	ON_NOTIFY(NM_CLICK, CLIST_SECTION_ID, OnListCtrlSelectChange)
-	// 快捷键: 切换界面显示项
-	ON_COMMAND(ID_DLG_PE_MENU_SWITCH, &CDialogPE::OnDlgPeMenuSwitch)
-	// 菜单项: 保存文件
-	ON_COMMAND(ID_DLG_PE_MENU_SAVE, &CDialogPE::OnDlgPeMenuSave)
-	// 菜单项: Image 转 file
-	ON_COMMAND(ID_DLG_PE_MENU_TO_FILE, &CDialogPE::OnDlgPeMenuToFile)
-	// 菜单项: file 转 Image
-	ON_COMMAND(ID_DLG_PE_MENU_TO_IMAGE, &CDialogPE::OnDlgPeMenuToImage)
-	ON_COMMAND(ID_DLG_PE_MENU_IMPORT_INJECT, &CDialogPE::OnDlgPeMenuImportInject)
-	ON_COMMAND(ID_DLG_PE_MENU_FAKE_SHELL_EXE, &CDialogPE::OnDlgPeMenuFakeShellExe)
-	ON_COMMAND(ID_DLG_PE_MENU_ADD_SHELL, &CDialogPE::OnDlgPeMenuAddShell)
 END_MESSAGE_MAP()
 
-
-// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-
-// 构造函数和析构函数
-
-// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-
-
-CDialogPE::CDialogPE(PCHAR pBuffer, UINT32 length, UINT32 isMemImage, CString path, CWnd* pParent) : CDialogEx(IDD_PE_DLG, pParent)
+// 构造函数
+CDialogPE::CDialogPE(PCHAR pBuffer, UINT32 bufferSize, UINT32 isImageBuffer, CString path, CWnd* pParent) : CDialogEx(IDD_PE_DLG, pParent)
 {
 	m_pBuffer = pBuffer;
-	m_length = length;
-	m_isMemImage = isMemImage;
+	m_bufferSize = bufferSize;
+	m_isImageBuffer = isImageBuffer;
 	m_path = path;
 	m_isDirty = FALSE;
 	m_validPEFlags = 0;
@@ -84,13 +79,14 @@ CDialogPE::CDialogPE(PCHAR pBuffer, UINT32 length, UINT32 isMemImage, CString pa
 	m_hexBegin = 0;
 	m_hexBeginWithBkColor = 0;
 	m_hexLengthWithBkColor = 0;
-	m_hexColor = RGB(255, 0, 0);
+	m_hexColor = RGB(0, 123, 0);
 	m_hexFontSize = 15;
 	m_hexModifyCursor = 0;
 	m_defaultBkColor = RGB(255, 255, 255);
 	m_flagEraseBk = FALSE;
 }
 
+// 析构函数
 CDialogPE::~CDialogPE()
 {
 	// 释放内存区域
@@ -98,17 +94,7 @@ CDialogPE::~CDialogPE()
 		free(m_pBuffer);
 }
 
-BOOL CDialogPE::PreTranslateMessage(MSG* pMsg)
-{
-	// 处理加速键
-	if (m_hAccelTable != NULL)
-	{
-		if (::TranslateAccelerator(m_hWnd, m_hAccelTable, pMsg))
-			return TRUE;
-	}
 
-	return CDialogEx::PreTranslateMessage(pMsg);
-}
 
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -120,13 +106,13 @@ BOOL CDialogPE::PreTranslateMessage(MSG* pMsg)
 // 创建控件
 int CDialogPE::mCreateItems()
 {
-	BOOL bCreate = FALSE;
+	BOOL bRet = FALSE;
 	DWORD dwStyle = 0;
 	LONG lStyle = 0;
 	int left = 0, top = 0, right = 0, bottom = 0;
 
 	// CMenu  主菜单
-	m_menu.LoadMenu(IDR_MENU_DLG_PE);
+	m_menu.LoadMenu(MENU_PE_DLG_MAIN);
 	SetMenu(&m_menu);
 
 	// 创建 CStatic 控件 path
@@ -135,16 +121,16 @@ int CDialogPE::mCreateItems()
 	right = left + CSTATIC_PATH_WIDTH;
 	bottom = top + ITEM_HEIGHT_COMMON;
 	dwStyle = WS_CHILD | WS_VISIBLE;
-	bCreate = m_static_path.Create(_T("路径:"), dwStyle, CRect(left, top, right, bottom), this, CSTATIC_PATH_ID);
-	if (!bCreate)
+	bRet = m_static_path.Create(_T("路径:"), dwStyle, CRect(left, top, right, bottom), this, CSTATIC_PATH_ID);
+	if (!bRet)
 		return -1;
 
 	// 创建 CEdit 控件 path
 	left = right + MARGIN_COMMON;
 	right = MARGIN_COMMON + HALF_WIDTH;
 	dwStyle = WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY;
-	bCreate = m_edit_path.Create(dwStyle, CRect(left, top, right, bottom), this, CEDIT_PATH_ID);
-	if (!bCreate)
+	bRet = m_edit_path.Create(dwStyle, CRect(left, top, right, bottom), this, CEDIT_PATH_ID);
+	if (!bRet)
 		return -1;
 
 	// 创建 CTreeCtrl 控件 header
@@ -153,8 +139,8 @@ int CDialogPE::mCreateItems()
 	right = left + HALF_WIDTH;
 	bottom = top + CTREE_HEADER_HEIGHT;
 	dwStyle = WS_VISIBLE | WS_TABSTOP | WS_CHILD | WS_BORDER | WS_VSCROLL | TVS_HASBUTTONS | TVS_LINESATROOT | TVS_HASLINES | TVS_DISABLEDRAGDROP | TVS_NOTOOLTIPS;
-	bCreate = m_tree_header.Create(dwStyle, CRect(left, top, right, bottom), this, CTREE_HEADER_ID);
-	if (!bCreate)
+	bRet = m_tree_header.Create(dwStyle, CRect(left, top, right, bottom), this, CTREE_HEADER_ID);
+	if (!bRet)
 		return -1;
 
 	// 创建 CListCtrl 控件 section
@@ -163,8 +149,8 @@ int CDialogPE::mCreateItems()
 	right = left + HALF_WIDTH;
 	bottom = top + CLIST_SECTION_HEIGHT;
 	dwStyle = WS_BORDER | WS_CHILD | WS_VISIBLE | LVS_REPORT | WS_VSCROLL;
-	bCreate = m_list_section.Create(dwStyle, CRect(left, top, right, bottom), this, CLIST_SECTION_ID);
-	if (!bCreate)
+	bRet = m_list_section.Create(dwStyle, CRect(left, top, right, bottom), this, CLIST_SECTION_ID);
+	if (!bRet)
 		return -1;
 	// 扩展样式
 	lStyle = GetWindowLong(m_list_section.m_hWnd, GWL_STYLE);		// 获取当前窗口style
@@ -197,8 +183,8 @@ int CDialogPE::mCreateItems()
 		{
 			left = MARGIN_COMMON + j * CBUTTON_TABLE_WIDTH + j * MARGIN_COMMON;
 			right = left + CBUTTON_TABLE_WIDTH;
-			bCreate = m_button_table[i * 4 + j].Create(_T(""), dwStyle, CRect(left, top, right, bottom), this, CBUTTON_TABLE_ID_BEGIN + i * 4 + j);
-			if (!bCreate)
+			bRet = m_button_table[i * 4 + j].Create(_T(""), dwStyle, CRect(left, top, right, bottom), this, CBUTTON_TABLE_ID_BEGIN + i * 4 + j);
+			if (!bRet)
 				return -1;
 		}
 	}
@@ -225,16 +211,16 @@ int CDialogPE::mCreateItems()
 	right = left + HALF_WIDTH;
 	m_hexRect.SetRect(left, top, right, bottom);	// 设置hex控件的矩形区域
 	dwStyle = WS_HSCROLL | WS_VSCROLL | WS_CHILD | ES_READONLY | ES_MULTILINE | WS_BORDER | WS_VISIBLE | ES_AUTOHSCROLL;
-	bCreate = m_edit_text.Create(dwStyle, m_hexRect, this, CEDIT_TEXT_ID);
-	if (!bCreate)
+	bRet = m_edit_text.Create(dwStyle, m_hexRect, this, CEDIT_TEXT_ID);
+	if (!bRet)
 		return -1;
 
 	// 创建CScrollBar hex 滚动条控件
 	left = right;
 	right = left + CSCROLLBAR_HEX_V_WIDTH;
 	dwStyle = WS_CHILD | WS_VISIBLE | SBS_VERT;
-	bCreate = m_scrollbar_hex.Create(dwStyle, CRect(left, top, right, bottom), this, CSCROLLBAR_HEX_V_ID);
-	if (!bCreate)
+	bRet = m_scrollbar_hex.Create(dwStyle, CRect(left, top, right, bottom), this, CSCROLLBAR_HEX_V_ID);
+	if (!bRet)
 		return -1;
 
 	// 创建CEdit 底部状态栏控件
@@ -242,8 +228,8 @@ int CDialogPE::mCreateItems()
 	bottom = top + CEDIT_BOTTOM_INFO_HEIGHT;
 	left = 0;
 	dwStyle = WS_CHILD | ES_READONLY  | WS_VISIBLE;
-	bCreate = m_edit_bottomInfo.Create(dwStyle, CRect(left, top, right, bottom), this, CEDIT_BOTTOM_INFO_ID);
-	if (!bCreate)
+	bRet = m_edit_bottomInfo.Create(dwStyle, CRect(left, top, right, bottom), this, CEDIT_BOTTOM_INFO_ID);
+	if (!bRet)
 		return -1;
 
 	return 0;
@@ -275,8 +261,8 @@ int CDialogPE::mInitItems()
 
 	// CScrollBar 控件 hex
 	m_scrollbar_hex.ShowWindow(m_showFlag == 1);
+	mSetScrollBarHexInfo();		// 设置滚动条hex的参数
 	m_scrollbar_hex.EnableWindow(FALSE);
-	mSetScrollBarHex();		// 设置滚动条hex的参数
 
 	// CEdit 控件 bottomInfo
 	m_edit_bottomInfo.SetWindowText(TEXT(""));
@@ -300,7 +286,6 @@ int CDialogPE::mAnalyzeHeaderInfo()
 		HTREEITEM hRoot = NULL;                 // 根节点
 		HTREEITEM hFileHeader = NULL;			// 文件头节点
 		HTREEITEM hOptionalHeader = NULL;		// 可选头节点
-
 		HTREEITEM hChild = NULL;
 
 		offset = pDos->e_lfanew;
@@ -805,7 +790,7 @@ int CDialogPE::mAnalyzeHeaderInfo()
 	}
 	catch (...)
 	{
-		m_edit_bottomInfo.SetWindowText(TEXT("头信息 分析失败! 检查Header 结构是否正常!"));
+		m_edit_bottomInfo.SetWindowText(TEXT("头信息 分析失败,内存访问异常! 检查Header 结构是否正常!"));
 		return -1;
 	}
 
@@ -822,6 +807,7 @@ int CDialogPE::mAnalyzeSectionInfo()
 		int n;
 
 		m_list_section.EnableWindow(TRUE);
+
 		for (int i = 0; i < pNt32->FileHeader.NumberOfSections; ++i)
 		{
 			str.Format(TEXT("%d"), i);
@@ -897,7 +883,7 @@ int CDialogPE::mAnalyzePEFile()
 	m_edit_path.EnableWindow(TRUE);
 
 	// 不是正确的PE文件
-	result = IsValidPE(m_pBuffer, m_length,m_isMemImage);
+	result = IsValidPE(m_pBuffer, m_bufferSize,m_isImageBuffer);
 	if (result < 0)
 		m_validPEFlags |= 1;
 
@@ -927,22 +913,26 @@ int CDialogPE::mAnalyzePEFile()
 
 	// title
 	CString str = PathFindFileName(m_path);
-	if (m_isMemImage)
+	if (m_isImageBuffer)
 		str.Append(TEXT(" (内存映像)"));
 	else
 		str.Append(TEXT(" (文件映像)"));
 
+	if (m_isDirty)
+		str.Append(TEXT(" (dirty)"));
+
 	if (m_validPEFlags)
 	{
 		if (m_validPEFlags & 1)
-			str.Append(TEXT(" (PE文件大小或指纹有问题)"));
+			str.Append(TEXT(" (PE文件大小或指纹异常)"));
 		if (m_validPEFlags & 2)
-			str.Append(TEXT(" (头信息有问题)"));
+			str.Append(TEXT(" (头信息异常)"));
 		if (m_validPEFlags & 4)
-			str.Append(TEXT(" (节信息有问题)"));
+			str.Append(TEXT(" (节信息异常)"));
 		if (m_validPEFlags & 8)
-			str.Append(TEXT(" (表信息有问题)"));
+			str.Append(TEXT(" (表信息异常)"));
 	}
+
 
 	this->SetWindowTextW(str);
 
@@ -953,7 +943,7 @@ int CDialogPE::mAnalyzePEFile()
 }
 
 // 更新m_pBuffer ,并刷新页面
-int CDialogPE::mRefreshPage(char* pNewBuffer,int len ,int isMemImage)
+int CDialogPE::mRefreshPage(char* pNewBuffer,int bufferSize ,int isImageBuffer)
 {
 	if (pNewBuffer)
 	{
@@ -965,23 +955,12 @@ int CDialogPE::mRefreshPage(char* pNewBuffer,int len ,int isMemImage)
 				m_isDirty = TRUE;   // 设置脏标记，表示缓冲区已经被修改了
 			}
 			m_pBuffer = pNewBuffer;
+			m_bufferSize = bufferSize;
+			m_isImageBuffer = isImageBuffer;
 		}
-		if (len)
-			m_length = len;
-
-		m_isMemImage = isMemImage;
 	}
 
 	mAnalyzePEFile();
-
-	// 更新窗口标题，如果缓冲区被修改了，则在后面加上 (dirty) 字样
-	if (m_isDirty)
-	{
-		CString title;
-		GetWindowText(title);
-		title.Append(TEXT(" (dirty)"));
-		SetWindowText(title);
-	}
 
 	return 0;
 }
@@ -990,7 +969,10 @@ int CDialogPE::mRefreshPage(char* pNewBuffer,int len ,int isMemImage)
 int CDialogPE::mSwitchShowFlag(int showFlag)
 {
 	if (showFlag == m_showFlag)
+	{
+		InvalidateRect(&m_hexRect);
 		return 0;
+	}
 
 	m_showFlag = showFlag;
 
@@ -1045,20 +1027,19 @@ int CDialogPE::mGetPageRange()
 	CDC* pDC = GetDC();
 	pDC->SelectObject(&fontNormal);
 	CSize normalFontSize = pDC->GetTextExtent(TEXT("0"), 1);
-	TRACE("normalFontSize:%d\n", normalFontSize.cy);
 	ReleaseDC(pDC);
 	return m_hexRect.Height() / (normalFontSize.cy + normalFontSize.cy / 2) - 1;
 }
 
 // 设置滚动条范围
-int CDialogPE::mSetScrollBarHex()
+int CDialogPE::mSetScrollBarHexInfo()
 {
 	m_scrollbar_hex.EnableWindow(TRUE);
 	SCROLLINFO si;
 	memset(&si, 0, sizeof(si));
 	si.cbSize = sizeof(si);
 	si.nMin = 0;
-	si.nMax = m_length / 16 + (m_length % 16 ? 1 : 0);
+	si.nMax = m_bufferSize / 16 + (m_bufferSize % 16 ? 1 : 0);
 	si.nPage = mGetPageRange();
 	si.nPos = m_hexBegin >> 4;
 	si.fMask = SIF_PAGE | SIF_POS | SIF_RANGE;
@@ -1072,7 +1053,7 @@ int CDialogPE::mSetHexBegin(int hexBegin)
 {
 	hexBegin &= 0xFFFFFFF0;
 
-	int range = m_length / 16 + (m_length % 16 ? 1 : 0);
+	int range = m_bufferSize / 16 + (m_bufferSize % 16 ? 1 : 0);
 	int pageRange = mGetPageRange();
 
 	if (hexBegin < 0)
@@ -1186,7 +1167,7 @@ int CDialogPE::mDrawHex(CPaintDC* pDC)
 	rect.top = normalFontSize.cy + lineMargin;
 	for (int i = 0; i <= n; ++i)
 	{
-		if (m_hexBegin + i * 16 >= m_length)
+		if (m_hexBegin + i * 16 >= m_bufferSize)
 			break;
 
 		memDC.SelectObject(&fontNormal);
@@ -1244,10 +1225,9 @@ int CDialogPE::mDrawHex(CPaintDC* pDC)
 // 设置编辑框文本
 int CDialogPE::mSetEditText(CString text)
 {
+	mSwitchShowFlag(0);
 	m_edit_text.SetWindowText(text);
-
-	if (m_showFlag != 0)
-		mSwitchShowFlag(0);
+	m_edit_text.UpdateWindow();
 
 	return 0;
 }
@@ -1334,7 +1314,7 @@ void CDialogPE::mGetPEexportTableInfo()
 			return;
 		}
 
-		IMAGE_EXPORT_DIRECTORY* pExportTable = (IMAGE_EXPORT_DIRECTORY*)(m_isMemImage ? (p + pDir[0].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[0].VirtualAddress));
+		IMAGE_EXPORT_DIRECTORY* pExportTable = (IMAGE_EXPORT_DIRECTORY*)(m_isImageBuffer ? (p + pDir[0].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[0].VirtualAddress));
 		if (!pExportTable)
 		{
 			text = TEXT("导出表无效");
@@ -1348,7 +1328,7 @@ void CDialogPE::mGetPEexportTableInfo()
 		text.AppendFormat(TEXT("MajorVersion: %d\r\n"), pExportTable->MajorVersion);
 		text.AppendFormat(TEXT("MinorVersion: %d\r\n"), pExportTable->MinorVersion);
 		text.AppendFormat(TEXT("Name: 0x%08X  "), pExportTable->Name);
-		text += (char*)(m_isMemImage ? (p + pExportTable->Name) : RVA_TO_FILE_BUFFER_VA(p, pExportTable->Name));
+		text += (char*)(m_isImageBuffer ? (p + pExportTable->Name) : RVA_TO_FILE_BUFFER_VA(p, pExportTable->Name));
 		text += TEXT("\r\n");
 		text.AppendFormat(TEXT("Base: 0x%08X\r\n"), pExportTable->Base);
 		text.AppendFormat(TEXT("NumberOfFunctions: %d\r\n"), pExportTable->NumberOfFunctions);
@@ -1360,9 +1340,9 @@ void CDialogPE::mGetPEexportTableInfo()
 		text.AppendFormat(TEXT("\r\n\r\n导出函数列表:\r\n"));
 
 		// 三个子表
-		PDWORD pFunctions = (PDWORD)(m_isMemImage ? (p + pExportTable->AddressOfFunctions) : RVA_TO_FILE_BUFFER_VA(p, pExportTable->AddressOfFunctions));			// 函数RVA数组
-		PWORD pOrdinals = (PWORD)(m_isMemImage ? (p + pExportTable->AddressOfNameOrdinals) : RVA_TO_FILE_BUFFER_VA(p, pExportTable->AddressOfNameOrdinals));		// 序号数组
-		PDWORD pNames = (PDWORD)(m_isMemImage ? (p + pExportTable->AddressOfNames) : RVA_TO_FILE_BUFFER_VA(p, pExportTable->AddressOfNames));						// 函数名RVA数组
+		PDWORD pFunctions = (PDWORD)(m_isImageBuffer ? (p + pExportTable->AddressOfFunctions) : RVA_TO_FILE_BUFFER_VA(p, pExportTable->AddressOfFunctions));			// 函数RVA数组
+		PWORD pOrdinals = (PWORD)(m_isImageBuffer ? (p + pExportTable->AddressOfNameOrdinals) : RVA_TO_FILE_BUFFER_VA(p, pExportTable->AddressOfNameOrdinals));		// 序号数组
+		PDWORD pNames = (PDWORD)(m_isImageBuffer ? (p + pExportTable->AddressOfNames) : RVA_TO_FILE_BUFFER_VA(p, pExportTable->AddressOfNames));						// 函数名RVA数组
 
 		for (DWORD i = 0; i < pExportTable->NumberOfFunctions; ++i)
 		{
@@ -1375,7 +1355,7 @@ void CDialogPE::mGetPEexportTableInfo()
 				if (pOrdinals[j] == i)
 				{
 					text.AppendFormat(TEXT("  名称:"));
-					text += (char*)(m_isMemImage ? (p + pNames[j]) : RVA_TO_FILE_BUFFER_VA(p, pNames[j]));
+					text += (char*)(m_isImageBuffer ? (p + pNames[j]) : RVA_TO_FILE_BUFFER_VA(p, pNames[j]));
 					break;
 				}
 			}
@@ -1410,7 +1390,7 @@ void CDialogPE::mGetPEImportTableInfo()
 			return;
 		}
 
-		IMAGE_IMPORT_DESCRIPTOR* pImportTable = (IMAGE_IMPORT_DESCRIPTOR*)(m_isMemImage ? (p + pDir[1].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[1].VirtualAddress));
+		IMAGE_IMPORT_DESCRIPTOR* pImportTable = (IMAGE_IMPORT_DESCRIPTOR*)(m_isImageBuffer ? (p + pDir[1].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[1].VirtualAddress));
 		if (!pImportTable)
 		{
 			text = TEXT("导入表无效");
@@ -1422,7 +1402,7 @@ void CDialogPE::mGetPEImportTableInfo()
 		while (pImportTable->Name)
 		{
 			text.AppendFormat(TEXT("\r\n\r\n------------------- 导入表信息: "));
-			text += (char*)(m_isMemImage ? (p + pImportTable->Name) : RVA_TO_FILE_BUFFER_VA(p, pImportTable->Name));
+			text += (char*)(m_isImageBuffer ? (p + pImportTable->Name) : RVA_TO_FILE_BUFFER_VA(p, pImportTable->Name));
 			text += TEXT("\r\n");
 			text.AppendFormat(TEXT("OriginalFirstThunk: 0x%08X\r\n"), pImportTable->OriginalFirstThunk);
 			text.AppendFormat(TEXT("TimeDateStamp: 0x%08X\r\n"), pImportTable->TimeDateStamp);
@@ -1435,17 +1415,17 @@ void CDialogPE::mGetPEImportTableInfo()
 			{
 				if (pImportTable->OriginalFirstThunk)
 				{
-					pThunkData64 = (PUINT64)(m_isMemImage ? (p + pImportTable->OriginalFirstThunk) : RVA_TO_FILE_BUFFER_VA(p, pImportTable->OriginalFirstThunk));
+					pThunkData64 = (PUINT64)(m_isImageBuffer ? (p + pImportTable->OriginalFirstThunk) : RVA_TO_FILE_BUFFER_VA(p, pImportTable->OriginalFirstThunk));
 				}
 				else
 				{
-					if (m_isMemImage)
+					if (m_isImageBuffer)
 					{
 						text = TEXT("导入表无效, 因为内存镜像还没有INT");
 						mSetEditText(text);
 						return;
 					}
-					pThunkData64 = (PUINT64)(m_isMemImage ? (p + pImportTable->FirstThunk) : RVA_TO_FILE_BUFFER_VA(p, pImportTable->FirstThunk)); // IAT表
+					pThunkData64 = (PUINT64)(m_isImageBuffer ? (p + pImportTable->FirstThunk) : RVA_TO_FILE_BUFFER_VA(p, pImportTable->FirstThunk)); // IAT表
 				}
 
 				// 以0结尾结束
@@ -1458,7 +1438,7 @@ void CDialogPE::mGetPEImportTableInfo()
 					else
 					{
 						text.AppendFormat(TEXT("名称导入:"));
-						text += (char*)(m_isMemImage ? (p + *pThunkData64) : RVA_TO_FILE_BUFFER_VA(p, *pThunkData64)) + sizeof(WORD); // 有2字节多余.
+						text += (char*)(m_isImageBuffer ? (p + *pThunkData64) : RVA_TO_FILE_BUFFER_VA(p, *pThunkData64)) + sizeof(WORD); // 有2字节多余.
 						text += TEXT("\r\n");
 					}
 
@@ -1469,17 +1449,17 @@ void CDialogPE::mGetPEImportTableInfo()
 			{
 				if (pImportTable->OriginalFirstThunk)
 				{
-					pThunkData32 = (PUINT32)(m_isMemImage ? (p + pImportTable->OriginalFirstThunk) : RVA_TO_FILE_BUFFER_VA(p, pImportTable->OriginalFirstThunk));
+					pThunkData32 = (PUINT32)(m_isImageBuffer ? (p + pImportTable->OriginalFirstThunk) : RVA_TO_FILE_BUFFER_VA(p, pImportTable->OriginalFirstThunk));
 				}
 				else
 				{
-					if (m_isMemImage)
+					if (m_isImageBuffer)
 					{
 						text = TEXT("导入表无效, 内存镜像 还没有INT");
 						mSetEditText(text);
 						return;
 					}
-					pThunkData32 = (PUINT32)(m_isMemImage ? (p + pImportTable->FirstThunk) : RVA_TO_FILE_BUFFER_VA(p, pImportTable->FirstThunk)); // IAT表
+					pThunkData32 = (PUINT32)(m_isImageBuffer ? (p + pImportTable->FirstThunk) : RVA_TO_FILE_BUFFER_VA(p, pImportTable->FirstThunk)); // IAT表
 				}
 
 				while (*pThunkData32)
@@ -1491,7 +1471,7 @@ void CDialogPE::mGetPEImportTableInfo()
 					else
 					{
 						text.AppendFormat(TEXT("名称导入:"));
-						text += (char*)(m_isMemImage ? (p + *pThunkData32) : RVA_TO_FILE_BUFFER_VA(p, *pThunkData32)) + sizeof(WORD);
+						text += (char*)(m_isImageBuffer ? (p + *pThunkData32) : RVA_TO_FILE_BUFFER_VA(p, *pThunkData32)) + sizeof(WORD);
 						text += TEXT("\r\n");
 					}
 
@@ -1579,7 +1559,7 @@ void CDialogPE::mGetPEResourceTableInfo()
 			return;
 		}
 
-		IMAGE_RESOURCE_DIRECTORY* pResourceTable = (IMAGE_RESOURCE_DIRECTORY*)(m_isMemImage ? (p + pDir[2].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[2].VirtualAddress));
+		IMAGE_RESOURCE_DIRECTORY* pResourceTable = (IMAGE_RESOURCE_DIRECTORY*)(m_isImageBuffer ? (p + pDir[2].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[2].VirtualAddress));
 		if (!pResourceTable)
 		{
 			text = TEXT("资源表无效");
@@ -1618,7 +1598,7 @@ void CDialogPE::mGetPESEHTableInfo()
 			return;
 		}
 
-		IMAGE_RUNTIME_FUNCTION_ENTRY* pRunTimeFuncEntry= (IMAGE_RUNTIME_FUNCTION_ENTRY*)(m_isMemImage ? (p + pDir[3].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[3].VirtualAddress));
+		IMAGE_RUNTIME_FUNCTION_ENTRY* pRunTimeFuncEntry= (IMAGE_RUNTIME_FUNCTION_ENTRY*)(m_isImageBuffer ? (p + pDir[3].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[3].VirtualAddress));
 		if (!pRunTimeFuncEntry)
 		{
 			text = TEXT("异常表无效");
@@ -1684,7 +1664,7 @@ void CDialogPE::mGetPESEHTableInfo()
 			text.AppendFormat(TEXT("EndAddress:%08X\r\n"), pRunTimeFuncEntry[i].EndAddress);				// 函数结束地址
 			text.AppendFormat(TEXT("UnwindInfoAddress:%08X\r\n"), pRunTimeFuncEntry[i].UnwindData);			// 展开信息
 
-			PUNWIND_INFO pUnwindInfo = (PUNWIND_INFO)(m_isMemImage ? (p + pRunTimeFuncEntry[i].UnwindData) : RVA_TO_FILE_BUFFER_VA(p, pRunTimeFuncEntry[i].UnwindData));
+			PUNWIND_INFO pUnwindInfo = (PUNWIND_INFO)(m_isImageBuffer ? (p + pRunTimeFuncEntry[i].UnwindData) : RVA_TO_FILE_BUFFER_VA(p, pRunTimeFuncEntry[i].UnwindData));
 			if (pUnwindInfo)
 			{
 				text.AppendFormat(TEXT("\tUnwindInfo:\r\n"));
@@ -1747,6 +1727,13 @@ void CDialogPE::mGetPECertificateTableInfo()
 			return;
 		}
 
+		if (m_isImageBuffer)
+		{
+			text = TEXT("内存映像不支持查看安全证书表");
+			mSetEditText(text);
+			return;
+		}
+
 		// 安全证书主结构
 		typedef struct _WIN_CERTIFICATE {
 			DWORD   dwLength;          // 整个证书块的总长度（含本结构体+PKCS#7数据）
@@ -1756,8 +1743,8 @@ void CDialogPE::mGetPECertificateTableInfo()
 		} WIN_CERTIFICATE, * PWIN_CERTIFICATE;
 
 
-		// 安全证书的偏移是FOA而不是RVA，所以需要反向转换.
-		WIN_CERTIFICATE* pCertifcateTable = (WIN_CERTIFICATE*)(!m_isMemImage ? (p + pDir[4].VirtualAddress) : (p+foaToRva(p, pDir[4].VirtualAddress)));
+		// 安全证书的偏移是FOA而不是RVA
+		WIN_CERTIFICATE* pCertifcateTable = (WIN_CERTIFICATE*)(p + pDir[4].VirtualAddress);
 		if (!pCertifcateTable)
 		{
 			text = TEXT("安全证书表无效");
@@ -1803,7 +1790,7 @@ void CDialogPE::mGetPEBaseRelocationTableInfo()
 			return;
 		}
 
-		IMAGE_BASE_RELOCATION* pBaseRelocationTable = (IMAGE_BASE_RELOCATION*)(m_isMemImage ? (p + pDir[5].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[5].VirtualAddress));
+		IMAGE_BASE_RELOCATION* pBaseRelocationTable = (IMAGE_BASE_RELOCATION*)(m_isImageBuffer ? (p + pDir[5].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[5].VirtualAddress));
 		if (!pBaseRelocationTable)
 		{
 			text = TEXT("重定位表无效");
@@ -1851,7 +1838,7 @@ void CDialogPE::mGetPEDebugTableInfo()
 			return;
 		}
 
-		IMAGE_DEBUG_DIRECTORY* pDebugTable = (IMAGE_DEBUG_DIRECTORY*)(m_isMemImage ? (p + pDir[6].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[6].VirtualAddress));
+		IMAGE_DEBUG_DIRECTORY* pDebugTable = (IMAGE_DEBUG_DIRECTORY*)(m_isImageBuffer ? (p + pDir[6].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[6].VirtualAddress));
 		if (!pDebugTable)
 		{
 			text = TEXT("调试信息表无效");
@@ -1914,7 +1901,7 @@ void CDialogPE::mGetTLSTableInfo()
 
 		if (isX64(p))
 		{
-			IMAGE_TLS_DIRECTORY64* pTLSTable64 = (IMAGE_TLS_DIRECTORY64*)(m_isMemImage ? (p + pDir[9].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[9].VirtualAddress));
+			IMAGE_TLS_DIRECTORY64* pTLSTable64 = (IMAGE_TLS_DIRECTORY64*)(m_isImageBuffer ? (p + pDir[9].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[9].VirtualAddress));
 			if (!pTLSTable64)
 			{
 				text = TEXT("TLS表无效");
@@ -1930,7 +1917,7 @@ void CDialogPE::mGetTLSTableInfo()
 			UINT32 pCallBacksRVA = (UINT32)(pTLSTable64->AddressOfCallBacks - pNt64->OptionalHeader.ImageBase);	// 获取RVA
 			PUINT64 pCallBacks;
 
-			if (m_isMemImage)
+			if (m_isImageBuffer)
 				pCallBacks = (PUINT64)(p + pCallBacksRVA);
 			else
 				pCallBacks = (PUINT64)(p + rvaToFoa(p, pCallBacksRVA));
@@ -1942,7 +1929,7 @@ void CDialogPE::mGetTLSTableInfo()
 		}
 		else
 		{
-			IMAGE_TLS_DIRECTORY32* pTLSTable32 = (IMAGE_TLS_DIRECTORY32*)(m_isMemImage ? (p + pDir[9].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[9].VirtualAddress));
+			IMAGE_TLS_DIRECTORY32* pTLSTable32 = (IMAGE_TLS_DIRECTORY32*)(m_isImageBuffer ? (p + pDir[9].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[9].VirtualAddress));
 			if (!pTLSTable32)
 			{
 				text = TEXT("TLS表无效");
@@ -1957,7 +1944,7 @@ void CDialogPE::mGetTLSTableInfo()
 			text.AppendFormat(TEXT("Characteristics:%08X\r\n"), pTLSTable32->Characteristics);
 			UINT32 pCallBacksRVA = (UINT32)(pTLSTable32->AddressOfCallBacks - pNt32->OptionalHeader.ImageBase);	// 获取RVA
 			PUINT32 pCallBacks;
-			if (m_isMemImage)
+			if (m_isImageBuffer)
 				pCallBacks = (PUINT32)(p + pCallBacksRVA);
 			else
 				pCallBacks = (PUINT32)(p + rvaToFoa(p, pCallBacksRVA));
@@ -1997,7 +1984,7 @@ void CDialogPE::mGetPELoadConfigTableInfo()
 
 		if (isX64(p))
 		{
-			IMAGE_LOAD_CONFIG_DIRECTORY64* pLoadConfigTable = (IMAGE_LOAD_CONFIG_DIRECTORY64*)(m_isMemImage ? (p + pDir[10].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[10].VirtualAddress));
+			IMAGE_LOAD_CONFIG_DIRECTORY64* pLoadConfigTable = (IMAGE_LOAD_CONFIG_DIRECTORY64*)(m_isImageBuffer ? (p + pDir[10].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[10].VirtualAddress));
 			if (!pLoadConfigTable)
 			{
 				text = TEXT("加载配置表无效");
@@ -2009,13 +1996,13 @@ void CDialogPE::mGetPELoadConfigTableInfo()
 			text.AppendFormat(TEXT("SEHandlerTable:%016I64X\r\n"), pLoadConfigTable->SEHandlerTable);
 			text.AppendFormat(TEXT("SEHandlerCount:%016I64X\r\n"), pLoadConfigTable->SEHandlerCount);
 
-			PUINT32 pSEHFuncRVA = (PUINT32)(m_isMemImage ? (p + pLoadConfigTable->SEHandlerTable) : RVA_TO_FILE_BUFFER_VA(p, pLoadConfigTable->SEHandlerTable));
+			PUINT32 pSEHFuncRVA = (PUINT32)(m_isImageBuffer ? (p + pLoadConfigTable->SEHandlerTable) : RVA_TO_FILE_BUFFER_VA(p, pLoadConfigTable->SEHandlerTable));
 			for (UINT32 i = 0; i < pLoadConfigTable->SEHandlerCount; ++i)
 				text.AppendFormat(TEXT("SEHandler:%08X\r\n"), pSEHFuncRVA[i]);
 		}
 		else
 		{
-			IMAGE_LOAD_CONFIG_DIRECTORY32* pLoadConfigTable = (IMAGE_LOAD_CONFIG_DIRECTORY32*)(m_isMemImage ? (p + pDir[10].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[10].VirtualAddress));
+			IMAGE_LOAD_CONFIG_DIRECTORY32* pLoadConfigTable = (IMAGE_LOAD_CONFIG_DIRECTORY32*)(m_isImageBuffer ? (p + pDir[10].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[10].VirtualAddress));
 			if (!pLoadConfigTable)
 			{
 				text = TEXT("加载配置表无效");
@@ -2029,7 +2016,7 @@ void CDialogPE::mGetPELoadConfigTableInfo()
 
 			UINT32 SEHFuncRVA = (UINT32)( pLoadConfigTable->SEHandlerTable - pNt32->OptionalHeader.ImageBase);	// 获取RVA
 			PUINT32 pSEHFunc;
-			if (m_isMemImage)
+			if (m_isImageBuffer)
 				pSEHFunc = (PUINT32)(p + SEHFuncRVA);
 			else
 				pSEHFunc = (PUINT32)( RVA_TO_FILE_BUFFER_VA(p, SEHFuncRVA));
@@ -2065,7 +2052,7 @@ void CDialogPE::mGetPEBoundImportTableInfo()
 			return;
 		}
 
-		IMAGE_BOUND_IMPORT_DESCRIPTOR* pBoundImportTable = (IMAGE_BOUND_IMPORT_DESCRIPTOR*)(m_isMemImage ? (p + pDir[11].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[11].VirtualAddress));
+		IMAGE_BOUND_IMPORT_DESCRIPTOR* pBoundImportTable = (IMAGE_BOUND_IMPORT_DESCRIPTOR*)(m_isImageBuffer ? (p + pDir[11].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[11].VirtualAddress));
 		PCHAR pBase = (PCHAR)pBoundImportTable;
 		if (!pBoundImportTable)
 		{
@@ -2155,7 +2142,7 @@ void CDialogPE::mGetPEDelayLoadImportTableInfo()
 			return;
 		}
 
-		IMAGE_DELAYLOAD_DESCRIPTOR* pDelayLoadImportTable = (IMAGE_DELAYLOAD_DESCRIPTOR*)(m_isMemImage ? (p + pDir[13].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[13].VirtualAddress));
+		IMAGE_DELAYLOAD_DESCRIPTOR* pDelayLoadImportTable = (IMAGE_DELAYLOAD_DESCRIPTOR*)(m_isImageBuffer ? (p + pDir[13].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[13].VirtualAddress));
 		if (!pDelayLoadImportTable)
 		{
 			text = TEXT("延迟导入表无效");
@@ -2167,7 +2154,7 @@ void CDialogPE::mGetPEDelayLoadImportTableInfo()
 		{	
 			text.AppendFormat(TEXT("\r\nAttributes.AllAttributes:%08X\r\n"), pDelayLoadImportTable->Attributes.AllAttributes);
 			text.AppendFormat(TEXT("DllNameRVA:%08X   "), pDelayLoadImportTable->DllNameRVA);
-			text += (PCHAR)( m_isMemImage ? (p + pDelayLoadImportTable->DllNameRVA) : RVA_TO_FILE_BUFFER_VA(p, pDelayLoadImportTable->DllNameRVA));
+			text += (PCHAR)( m_isImageBuffer ? (p + pDelayLoadImportTable->DllNameRVA) : RVA_TO_FILE_BUFFER_VA(p, pDelayLoadImportTable->DllNameRVA));
 			text += TEXT("\r\n");
 			text.AppendFormat(TEXT("ModuleHandleRVA:%08X\r\n"), pDelayLoadImportTable->ModuleHandleRVA);
 			text.AppendFormat(TEXT("ImportAddressTableRVA:%08X\r\n"), pDelayLoadImportTable->ImportAddressTableRVA);
@@ -2178,8 +2165,8 @@ void CDialogPE::mGetPEDelayLoadImportTableInfo()
 
 			if (isX64(p))
 			{
-				PUINT64 pThunk64INT = (PUINT64)( m_isMemImage ? (p + pDelayLoadImportTable->ImportNameTableRVA) : RVA_TO_FILE_BUFFER_VA(p, pDelayLoadImportTable->ImportNameTableRVA));
-				PUINT64 pThunk64IAT = (PUINT64)( m_isMemImage ? (p + pDelayLoadImportTable->ImportAddressTableRVA) : RVA_TO_FILE_BUFFER_VA(p, pDelayLoadImportTable->ImportAddressTableRVA));
+				PUINT64 pThunk64INT = (PUINT64)( m_isImageBuffer ? (p + pDelayLoadImportTable->ImportNameTableRVA) : RVA_TO_FILE_BUFFER_VA(p, pDelayLoadImportTable->ImportNameTableRVA));
+				PUINT64 pThunk64IAT = (PUINT64)( m_isImageBuffer ? (p + pDelayLoadImportTable->ImportAddressTableRVA) : RVA_TO_FILE_BUFFER_VA(p, pDelayLoadImportTable->ImportAddressTableRVA));
 				while (*pThunk64INT)
 				{
 					text.AppendFormat(TEXT("\r\n\tImportName:%016I64X\r\n"), *pThunk64INT);
@@ -2188,7 +2175,7 @@ void CDialogPE::mGetPEDelayLoadImportTableInfo()
 						text.AppendFormat(TEXT("\t序号导入:%016I64X\r\n"), *pThunk64INT & 0xFFFF);
 					else
 					{
-						IMAGE_IMPORT_BY_NAME* pByName = (IMAGE_IMPORT_BY_NAME*)( m_isMemImage ? (p + (*pThunk64INT)) : RVA_TO_FILE_BUFFER_VA(p, (UINT32)*pThunk64INT));
+						IMAGE_IMPORT_BY_NAME* pByName = (IMAGE_IMPORT_BY_NAME*)( m_isImageBuffer ? (p + (*pThunk64INT)) : RVA_TO_FILE_BUFFER_VA(p, (UINT32)*pThunk64INT));
 						text += TEXT("\t名字导入:\t");
 						text += (PCHAR)(pByName->Name);
 						text += TEXT("\r\n");
@@ -2200,8 +2187,8 @@ void CDialogPE::mGetPEDelayLoadImportTableInfo()
 			}
 			else
 			{
-				PUINT32 pThunkINT = (PUINT32)( m_isMemImage ? (p + pDelayLoadImportTable->ImportNameTableRVA) : RVA_TO_FILE_BUFFER_VA(p, pDelayLoadImportTable->ImportNameTableRVA));
-				PUINT32 pThunkIAT = (PUINT32)( m_isMemImage ? (p + pDelayLoadImportTable->ImportAddressTableRVA) : RVA_TO_FILE_BUFFER_VA(p, pDelayLoadImportTable->ImportAddressTableRVA));
+				PUINT32 pThunkINT = (PUINT32)( m_isImageBuffer ? (p + pDelayLoadImportTable->ImportNameTableRVA) : RVA_TO_FILE_BUFFER_VA(p, pDelayLoadImportTable->ImportNameTableRVA));
+				PUINT32 pThunkIAT = (PUINT32)( m_isImageBuffer ? (p + pDelayLoadImportTable->ImportAddressTableRVA) : RVA_TO_FILE_BUFFER_VA(p, pDelayLoadImportTable->ImportAddressTableRVA));
 				while (*pThunkINT)
 				{
 					text.AppendFormat(TEXT("\r\n\tImportName:%08X\r\n"), *pThunkINT);
@@ -2210,7 +2197,7 @@ void CDialogPE::mGetPEDelayLoadImportTableInfo()
 						text.AppendFormat(TEXT("\t序号导入:%08X\r\n"), *pThunkINT & 0xFFFF);
 					else
 					{
-						IMAGE_IMPORT_BY_NAME* pByName = (IMAGE_IMPORT_BY_NAME*)( m_isMemImage ? (p + (*pThunkINT)) : RVA_TO_FILE_BUFFER_VA(p, *pThunkINT));
+						IMAGE_IMPORT_BY_NAME* pByName = (IMAGE_IMPORT_BY_NAME*)( m_isImageBuffer ? (p + (*pThunkINT)) : RVA_TO_FILE_BUFFER_VA(p, *pThunkINT));
 						text += TEXT("\t名字导入:\t");
 						text += (PCHAR)(pByName->Name);
 						text += TEXT("\r\n");
@@ -2248,7 +2235,7 @@ void CDialogPE::mGetPEComTableInfo()
 			return;
 		}
 
-		IMAGE_COR20_HEADER* pCOMTable = (IMAGE_COR20_HEADER*)(m_isMemImage ? (p + pDir[14].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[14].VirtualAddress));
+		IMAGE_COR20_HEADER* pCOMTable = (IMAGE_COR20_HEADER*)(m_isImageBuffer ? (p + pDir[14].VirtualAddress) : RVA_TO_FILE_BUFFER_VA(p, pDir[14].VirtualAddress));
 		if (!pCOMTable)
 		{
 			text = TEXT("COM表无效");
@@ -2288,132 +2275,175 @@ void CDialogPE::mGetPEComTableInfo()
 // 借壳执行
 int CDialogPE::mFakeShellRun(CString shellPath, PCHAR pBufferExe/*file buffer*/, UINT32 sizeofBufferExe)
 {
-	STARTUPINFO si;
-	PROCESS_INFORMATION pi;
-	ZeroMemory(&si, sizeof(si));
-	si.cb = sizeof(si);
-	ZeroMemory(&pi, sizeof(pi));
+	try {
 
-	if (!CreateProcess(
-		shellPath,
-		NULL,               // Command line
-		NULL,               // Process handle not inheritable
-		NULL,               // Thread handle not inheritable
-		FALSE,              // Set handle inheritance to FALSE
-		CREATE_NEW_CONSOLE | CREATE_SUSPENDED, //  子进程新建控制台.否则父子就用一个控制台,挂起形式创建
-		NULL,               // Use parent's environment block
-		NULL,               // Use parent's starting directory 
-		&si,                // Pointer to STARTUPINFO structure
-		&pi)                // Pointer to PROCESS_INFORMATION structure
-		)
-	{
-		return -1;
-	}
-	CloseHandle(pi.hProcess);
-	CloseHandle(pi.hThread);
+		if (m_isImageBuffer)
+			return -1;
 
-	// 重新打开进程线程,以获取权限
-	HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS | PROCESS_VM_OPERATION, FALSE, pi.dwProcessId);
-	if (!hProcess)
-		return -2;
-	HANDLE hThread = OpenThread(THREAD_ALL_ACCESS | THREAD_GET_CONTEXT | THREAD_SET_CONTEXT, false, pi.dwThreadId);
-	if (!hThread)
-	{
-		CloseHandle(hProcess);
-		return -3;
-	}
+		if (isX64(pBufferExe) != isX64(m_pBuffer))
+			return -2;
+
+		STARTUPINFO si;
+		PROCESS_INFORMATION pi;
+		ZeroMemory(&si, sizeof(si));
+		si.cb = sizeof(si);
+		ZeroMemory(&pi, sizeof(pi));
+
+		if (!CreateProcess(
+			shellPath,
+			NULL,               // Command line
+			NULL,               // Process handle not inheritable
+			NULL,               // Thread handle not inheritable
+			FALSE,              // Set handle inheritance to FALSE
+			CREATE_NEW_CONSOLE | CREATE_SUSPENDED, //  子进程新建控制台.否则父子就用一个控制台,挂起形式创建
+			NULL,               // Use parent's environment block
+			NULL,               // Use parent's starting directory 
+			&si,                // Pointer to STARTUPINFO structure
+			&pi)                // Pointer to PROCESS_INFORMATION structure
+			)
+		{
+			return -3;
+		}
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
+
+		// 重新打开进程线程,以获取权限
+		HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS | PROCESS_VM_OPERATION, FALSE, pi.dwProcessId);
+		if (!hProcess)
+			return -4;
+
+		BOOL isWow64Process1 = FALSE;
+		BOOL isWow64Process2 = FALSE;
+
+		if (!IsWow64Process(hProcess, &isWow64Process1))
+		{
+			TerminateProcess(hProcess, 0);
+			CloseHandle(hProcess);
+			return -5;
+		}
+		if (!IsWow64Process(GetCurrentProcess(), &isWow64Process2))
+		{
+			TerminateProcess(hProcess, 0);
+			CloseHandle(hProcess);
+			return -6;
+		}
+		if (isWow64Process1 != isWow64Process2)
+		{
+			TerminateProcess(hProcess, 0);
+			CloseHandle(hProcess);
+			return -7;
+		}
+
+		HANDLE hThread = OpenThread(THREAD_ALL_ACCESS | THREAD_GET_CONTEXT | THREAD_SET_CONTEXT, false, pi.dwThreadId);
+		if (!hThread)
+		{
+			TerminateProcess(hProcess, 0);
+			CloseHandle(hProcess);
+			return -8;
+		}
 
 
-	// 获取  线程初始上下文环境
-	CONTEXT context = { 0 };
-	context.ContextFlags = CONTEXT_FULL;	// 获取所有值.
-	if (!GetThreadContext(hThread, &context))
-	{
-		CloseHandle(hProcess);
-		CloseHandle(hThread);
-		return -4;
-	}
+		// 获取  线程初始上下文环境
+		CONTEXT context = { 0 };
+		context.ContextFlags = CONTEXT_FULL;	// 获取所有值.
+		if (!GetThreadContext(hThread, &context))
+		{
+			TerminateProcess(hProcess, 0);
+			CloseHandle(hProcess);
+			CloseHandle(hThread);
+			return -9;
+		}
 
-	// 将fileBuffer 转 imageBuffer
-	PCHAR pNewBuffer = NULL;
-	UINT32 newBufferSize = 0;
-	int result = fileBufferToImageBuffer(m_pBuffer, m_length, &pNewBuffer, &newBufferSize);
-	if (result < 0)
-	{
-		CloseHandle(hProcess);
-		CloseHandle(hThread);
-		return -5;
-	}
+		// 将fileBuffer 转 imageBuffer
+		PCHAR pNewBuffer = NULL;
+		UINT32 newBufferSize = 0;
+		int result = fileBufferToImageBuffer(m_pBuffer, m_bufferSize, &pNewBuffer, &newBufferSize);
+		if (result < 0)
+		{
+			TerminateProcess(hProcess, 0);
+			CloseHandle(hProcess);
+			CloseHandle(hThread);
+			return -5;
+		}
 
-	// 获取模块基址
-	INT_PTR image_base = 0;
+		// 获取模块基址
+		INT_PTR image_base = 0;
 #if _WIN64
-	ReadProcessMemory(hProcess, LPCVOID(context.Rdx + 0x10), &image_base, 8, NULL);
+		ReadProcessMemory(hProcess, LPCVOID(context.Rdx + 0x10), &image_base, 8, NULL);
 #else
-	ReadProcessMemory(hProcess, LPCVOID(context.Ebx + 8), &image_base, 4, NULL);
+		ReadProcessMemory(hProcess, LPCVOID(context.Ebx + 8), &image_base, 4, NULL);
 #endif
 
-	// 卸载目标进程的旧模块,Win10的安全机制问题. 不让直接写exe内存位置. 先卸载,再申请空间写.
-	typedef long NTSTATUS;
-	typedef NTSTATUS(__stdcall* pfnZwUnmapViewOfSection)(HANDLE ProcessHandle, PVOID  BaseAddress);
-	HMODULE hModule = LoadLibrary(TEXT("ntdll.dll"));
-	pfnZwUnmapViewOfSection func = (pfnZwUnmapViewOfSection)GetProcAddress(hModule, "ZwUnmapViewOfSection");
-	NTSTATUS status = func(hProcess, (PVOID)image_base);  // 这是ntdll.dll 卸载模块的未导出函数
-	if (status < 0)
-	{
-		CloseHandle(hProcess);
-		CloseHandle(hThread);
-		free(pNewBuffer);
-		return -6;
-	}
+		// 卸载目标进程的旧模块,Win10的安全机制问题. 不让直接写exe内存位置. 先卸载,再申请空间写.
+		typedef long NTSTATUS;
+		typedef NTSTATUS(__stdcall* pfnZwUnmapViewOfSection)(HANDLE ProcessHandle, PVOID  BaseAddress);
+		HMODULE hModule = LoadLibrary(TEXT("ntdll.dll"));
+		pfnZwUnmapViewOfSection func = (pfnZwUnmapViewOfSection)GetProcAddress(hModule, "ZwUnmapViewOfSection");
+		NTSTATUS status = func(hProcess, (PVOID)image_base);  // 这是ntdll.dll 卸载模块的未导出函数
+		if (status < 0)
+		{
+			TerminateProcess(hProcess, 0);
+			CloseHandle(hProcess);
+			CloseHandle(hThread);
+			free(pNewBuffer);
+			return -6;
+		}
 
-	// 申请新空间,并复制新模块到进程空间.
-	PCHAR pNew = (PCHAR)VirtualAllocEx(hProcess, (LPVOID)image_base, newBufferSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-	if (!pNew)
-	{
-		CloseHandle(hProcess);
-		CloseHandle(hThread);
-		free(pNewBuffer);
-		return -7;
-	}
+		// 申请新空间,并复制新模块到进程空间.
+		PCHAR pNew = (PCHAR)VirtualAllocEx(hProcess, (LPVOID)image_base, newBufferSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+		if (!pNew)
+		{
+			TerminateProcess(hProcess, 0);
+			CloseHandle(hProcess);
+			CloseHandle(hThread);
+			free(pNewBuffer);
+			return -7;
+		}
 
-	if (!WriteProcessMemory(hProcess, (LPVOID)pNew, pNewBuffer, newBufferSize, NULL))
-	{
-		CloseHandle(hThread);
-		CloseHandle(hProcess);
-		free(pNewBuffer);
-		VirtualFreeEx(hProcess, (LPVOID)pNew, 0, MEM_RELEASE);
-		return -6;
-	}
+		if (!WriteProcessMemory(hProcess, (LPVOID)pNew, pNewBuffer, newBufferSize, NULL))
+		{
+			TerminateProcess(hProcess, 0);
+			CloseHandle(hThread);
+			CloseHandle(hProcess);
+			free(pNewBuffer);
+			VirtualFreeEx(hProcess, (LPVOID)pNew, 0, MEM_RELEASE);
+			return -6;
+		}
 
-	PE_VAR_DEFINITION;
-	PE_VAR_ASSIGN(m_pBuffer);
+		PE_VAR_DEFINITION;
+		PE_VAR_ASSIGN(m_pBuffer);
 
 #ifdef _WIN64
-	context.Rcx = image_base + pNt64->OptionalHeader.AddressOfEntryPoint;
+		context.Rcx = image_base + pNt64->OptionalHeader.AddressOfEntryPoint;
 #else
-	context.Eax = image_base + pNt32->OptionalHeader.AddressOfEntryPoint;
+		context.Eax = image_base + pNt32->OptionalHeader.AddressOfEntryPoint;
 #endif
 
-	context.ContextFlags = CONTEXT_FULL;	// 获取所有值.
-	if (!SetThreadContext(hThread, &context))
-	{
+		context.ContextFlags = CONTEXT_FULL;	// 获取所有值.
+		if (!SetThreadContext(hThread, &context))
+		{
+			TerminateProcess(hProcess, 0);
+			CloseHandle(hThread);
+			CloseHandle(hProcess);
+			free(pNewBuffer);
+			VirtualFreeEx(hProcess, (LPVOID)pNew, 0, MEM_RELEASE);
+			return -8;
+		}
+
+		ResumeThread(hThread);
+
+		free(pNewBuffer);
+
+		// 等待子进程结束
+		// WaitForSingleObject(hProcess, INFINITE);
+
 		CloseHandle(hThread);
 		CloseHandle(hProcess);
-		free(pNewBuffer);
-		VirtualFreeEx(hProcess, (LPVOID)pNew, 0, MEM_RELEASE);
-		return -8;
 	}
-
-	ResumeThread(hThread);
-
-	free(pNewBuffer);
-
-	// 等待子进程结束
-	// WaitForSingleObject(hProcess, INFINITE);
-
-	CloseHandle(hThread);
-	CloseHandle(hProcess);
+	catch (...)
+	{
+		return -9;
+	}
 
 	return 0;
 }
@@ -2421,45 +2451,45 @@ int CDialogPE::mFakeShellRun(CString shellPath, PCHAR pBufferExe/*file buffer*/,
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-// 消息处理
+// 事件处理
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
 
 // 初始化对话框
 BOOL CDialogPE::OnInitDialog()
 {
-	CDialogEx::OnInitDialog();
-
-	m_hAccelTable = LoadAccelerators(AfxGetResourceHandle(), MAKEINTRESOURCE(IDR_ACCELERATOR_PE_DLG));
-
 	int result = 0;
 
+	CDialogEx::OnInitDialog();
+
+	// 加载快捷键资源表
+	m_hAccelTable = LoadAccelerators(AfxGetResourceHandle(), MAKEINTRESOURCE(ACCELERATOR_PE_DLG));
+
+	// 创建控件
 	result = mCreateItems();
 	if (result < 0)
 		return FALSE;
 
-	result = mRefreshPage();
+	// 刷新界面控件状态
+	result = mRefreshPage(m_pBuffer, m_bufferSize,m_isImageBuffer);
 	if (result < 0)
 		return FALSE;
 
 	return TRUE;
 }
 
-// 绘图
-void CDialogPE::OnPaint()
+// 前置消息处理
+BOOL CDialogPE::PreTranslateMessage(MSG* pMsg)
 {
-	CPaintDC dc(this);
+	// 处理加速键
+	if (m_hAccelTable != NULL)
+	{
+		if (::TranslateAccelerator(m_hWnd, m_hAccelTable, pMsg))
+			return TRUE;
+	}
 
-	if (m_showFlag != 1)
-		return;
-
-	mDrawHex(&dc);
-}
-
-// 关闭对话框
-void CDialogPE::OnCancel()
-{
-	DestroyWindow();
+	return CDialogEx::PreTranslateMessage(pMsg);
 }
 
 // 销毁
@@ -2470,8 +2500,25 @@ void CDialogPE::PostNcDestroy()
 	delete this;
 }
 
+// 绘图
+void CDialogPE::OnPaint()
+{
+	if (m_showFlag != 1)
+		return;
+
+	CPaintDC dc(this);
+
+	mDrawHex(&dc);
+}
+
+// 关闭对话框
+void CDialogPE::OnCancel()
+{
+	DestroyWindow();
+}
+
 // 处理按键事件
-void CDialogPE::OnButtonClickDataDirectory(UINT id)
+void CDialogPE::OnButtonDataDirectoryClick(UINT id)
 {
 	switch (id)
 	{
@@ -2529,10 +2576,10 @@ void CDialogPE::OnButtonClickDataDirectory(UINT id)
 }
 
 // 修改节
-void CDialogPE::OnSectionModify()
+void CDialogPE::OnMenuModifySection()
 {
 	try {
-		if (m_isMemImage)
+		if (m_isImageBuffer)
 		{
 			AfxMessageBox(TEXT("内存镜像不支持修改节"));
 			return;
@@ -2562,13 +2609,13 @@ void CDialogPE::OnSectionModify()
 
 		PCHAR pBufferNew = NULL;
 		UINT32 newBufferSize = 0;
-		result = modifySectionInFileBuffer(m_pBuffer, m_length,index, (PCHAR)nameA.GetString(), size_, charac_, &pBufferNew, &newBufferSize);
+		result = modifySectionInFileBuffer(m_pBuffer, m_bufferSize,index, (PCHAR)nameA.GetString(), size_, charac_, &pBufferNew, &newBufferSize);
 		if (result < 0)
 		{
 			AfxMessageBox(TEXT("修改节失败"));	
 			return;
 		}
-		mRefreshPage(pBufferNew, newBufferSize);
+		mRefreshPage(pBufferNew, newBufferSize,0);
 	}
 	catch (...)
 	{
@@ -2577,10 +2624,10 @@ void CDialogPE::OnSectionModify()
 }
 
 // 添加节
-void CDialogPE::OnSectionAdd()
+void CDialogPE::OnMenuAddSection()
 {
 	try {
-		if (m_isMemImage)
+		if (m_isImageBuffer)
 		{
 			AfxMessageBox(TEXT("内存镜像不支持修改节"));
 			return;
@@ -2600,13 +2647,13 @@ void CDialogPE::OnSectionAdd()
 
 		PCHAR pBufferNew = NULL;
 		UINT32 newBufferSize = 0;
-		result = addSectionInFileBuffer(m_pBuffer,m_length, (PCHAR)nameA.GetString(), size_, charac_, &pBufferNew, &newBufferSize);
+		result = addSectionInFileBuffer(m_pBuffer,m_bufferSize, (PCHAR)nameA.GetString(), size_, charac_, &pBufferNew, &newBufferSize);
 		if (result < 0)
 		{
 			AfxMessageBox(TEXT("添加节失败"));
 			return;
 		}
-		mRefreshPage(pBufferNew, newBufferSize);
+		mRefreshPage(pBufferNew, newBufferSize,0);
 	}
 	catch (...)
 	{
@@ -2615,10 +2662,10 @@ void CDialogPE::OnSectionAdd()
 }
 
 // 合并节
-void CDialogPE::OnSectionMerge()
+void CDialogPE::OnMenuMergeSection()
 {
 	try {
-		if (m_isMemImage)
+		if (m_isImageBuffer)
 		{
 			AfxMessageBox(TEXT("内存镜像不支持修改节"));
 			return;
@@ -2631,14 +2678,14 @@ void CDialogPE::OnSectionMerge()
 		int result;
 		PCHAR pBufferNew = NULL;
 		UINT32 newBufferSize = 0;
-		result = mergeSectionInFileBuffer(m_pBuffer,m_length, index, &pBufferNew , &newBufferSize);
+		result = mergeSectionInFileBuffer(m_pBuffer,m_bufferSize, index, &pBufferNew , &newBufferSize);
 		if (result < 0)
 		{
 			AfxMessageBox(TEXT("合并节失败"));
 			return;
 		}
 
-		mRefreshPage(pBufferNew, newBufferSize);
+		mRefreshPage(pBufferNew, newBufferSize,0);
 	}
 	catch (...)
 	{
@@ -2648,10 +2695,10 @@ void CDialogPE::OnSectionMerge()
 }
 
 // Section控件右键菜单事件处理函数
-void CDialogPE::OnListCtrlSelectMenu(NMHDR* pNMHDR, LRESULT* pResult)
+void CDialogPE::OnListCtrlSectionSelectMenu(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	CMenu menu;
-	menu.LoadMenu(IDR_MENU_PE_SECTION);
+	menu.LoadMenu(MENU_PE_DLG_SECTION);
 	CMenu* pPopupMenu = menu.GetSubMenu(0); // 获取第一个子菜单
 
 	CPoint point;
@@ -2721,7 +2768,7 @@ BOOL CDialogPE::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 		m_hexFontSize += num;
 		if (m_hexFontSize < 1)
 			m_hexFontSize = 1;
-		mSetScrollBarHex();
+		mSetScrollBarHexInfo();
 		InvalidateRect(m_hexRect);
 		return TRUE;
 	}
@@ -2758,7 +2805,7 @@ void CDialogPE::OnHexGoto()
 }
 
 // 树控件选中项改变 高亮显示对应区域
-void CDialogPE::OnTreeCtrlSelectChange(NMHDR* pNMHDR, LRESULT* pResult)
+void CDialogPE::OnTreeCtrlHeaderInfoSelectChange(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	NM_TREEVIEW* pNMTreeView = (NM_TREEVIEW*)pNMHDR;
 
@@ -2769,7 +2816,7 @@ void CDialogPE::OnTreeCtrlSelectChange(NMHDR* pNMHDR, LRESULT* pResult)
 }
 
 // 列表控件选中项改变 高亮显示对应区域
-void CDialogPE::OnListCtrlSelectChange(NMHDR* pNMHDR, LRESULT* pResult)
+void CDialogPE::OnListCtrlSectionSelectChange(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	int index = m_list_section.GetNextItem(-1, LVNI_SELECTED);
 	if (index == -1)
@@ -2780,47 +2827,61 @@ void CDialogPE::OnListCtrlSelectChange(NMHDR* pNMHDR, LRESULT* pResult)
 }
 
 // 界面 hex 和 edit 切换
-void CDialogPE::OnDlgPeMenuSwitch()
+void CDialogPE::OnMenuSwitchShowFlag()
 {
 	UINT32 n = (m_showFlag + 1) % MAX_SHOW_FLAG;
 	mSwitchShowFlag(n);
 }
 
 // 保存文件按钮
-void CDialogPE::OnDlgPeMenuSave()
+void CDialogPE::OnMenuSave()
 {
 	try {
-		PCHAR pBuffer = NULL;
+		PCHAR pNewBuffer = NULL;
 		UINT32 newBufferSize = 0;
+		int needFree = 0;
 		int result;
-		if (m_isMemImage)
+		if (m_isImageBuffer)
 		{
-			result = imageBufferToFileBuffer(m_pBuffer,m_length,&pBuffer, &newBufferSize);
+			result = imageBufferToFileBuffer(m_pBuffer,m_bufferSize,&pNewBuffer, &newBufferSize);
 			if (result < 0)
 			{
 				AfxMessageBox(TEXT("文件转换失败"));
 				return;
 			}
+			needFree = 1;
 		}
 		else
 		{
-			pBuffer = m_pBuffer;
-			newBufferSize = m_length;
+			pNewBuffer = m_pBuffer;
+			newBufferSize = m_bufferSize;
 		}
 
 		CFileDialog dlgFile(FALSE, NULL, NULL, OFN_HIDEREADONLY, _T("PE文件|*.*||"), NULL);
 		if (dlgFile.DoModal() != IDOK)
+		{
+			if (needFree)
+				free(pNewBuffer);
 			return;
+		}
 		CStringA strPathA;
 		strPathA = dlgFile.GetPathName();
 		if (strPathA.IsEmpty())
+		{
+			if (needFree)
+				free(pNewBuffer);
 			return;
+		}
 
-		result = mSaveFileData(strPathA.GetString(), pBuffer, newBufferSize);
+		result = mSaveFileData(strPathA.GetString(), pNewBuffer, newBufferSize);
 		if (result < 0)
 			AfxMessageBox(TEXT("保存失败"));
 		else
 			AfxMessageBox(TEXT("保存成功"));
+
+		if (needFree)
+			free(pNewBuffer);
+
 	}
 	catch (...)
 	{
@@ -2829,13 +2890,13 @@ void CDialogPE::OnDlgPeMenuSave()
 }
 
 // 内存转文件按钮
-void CDialogPE::OnDlgPeMenuToFile()
+void CDialogPE::OnMenuImageToFile()
 {
-	if (m_isMemImage)
+	if (m_isImageBuffer)
 	{
 		PCHAR pNewBuffer = NULL;
 		UINT32 newBufferSize = 0;
-		int result = imageBufferToFileBuffer(m_pBuffer, m_length, &pNewBuffer, &newBufferSize);
+		int result = imageBufferToFileBuffer(m_pBuffer, m_bufferSize, &pNewBuffer, &newBufferSize);
 		if (result < 0)
 		{
 			AfxMessageBox(TEXT("文件转换失败"));
@@ -2846,13 +2907,13 @@ void CDialogPE::OnDlgPeMenuToFile()
 }
 
 // 文件转内存按钮
-void CDialogPE::OnDlgPeMenuToImage()
+void CDialogPE::OnMenuFileToImage()
 {
-	if (!m_isMemImage)
+	if (!m_isImageBuffer)
 	{
 		PCHAR pNewBuffer = NULL;
 		UINT32 newBufferSize = 0;
-		int result = fileBufferToImageBuffer(m_pBuffer, m_length, &pNewBuffer, &newBufferSize);
+		int result = fileBufferToImageBuffer(m_pBuffer, m_bufferSize, &pNewBuffer, &newBufferSize);
 		if (result < 0)
 		{
 			AfxMessageBox(TEXT("文件转换失败"));
@@ -2863,182 +2924,211 @@ void CDialogPE::OnDlgPeMenuToImage()
 }
 
 // 导入表注入
-void CDialogPE::OnDlgPeMenuImportInject()
+void CDialogPE::OnMenuImportInject()
 {
-	mCreateConsole(TEXT("导入表注入"));
-
-	printf("选择注入方式:\r\n");
-	printf("1 : 名字注入\r\n");
-	printf("2 : 序号注入\r\n");
-	printf("其他 : 退出\r\n");
-
-	int n = 0;
-
-	scanf_s("%d", &n);
-
-	if (n == 1)
-	{
-		printf("格式: 模块名 函数名\r\n");
-		char moduleName[256] = { 0 };
-		char functionName[256] = { 0 };
-		scanf_s("%s %s", moduleName, 256, functionName, 256);
-		printf("模块名:%s\r\n", moduleName);
-		printf("函数名:%s\r\n", functionName);
-		PCHAR pNewBuffer = NULL;
-		UINT32 newBufferSize = 0;
-		int result = importTableInjectionByNameInFileBuffer(m_pBuffer, m_length, moduleName, functionName, &pNewBuffer, &newBufferSize);
-		if (result < 0)
-			AfxMessageBox(TEXT("注入失败"));
-		else
+	try {
+		if (m_isImageBuffer)
 		{
-			mRefreshPage(pNewBuffer, newBufferSize);
-			AfxMessageBox(TEXT("注入成功"));
+			AfxMessageBox(TEXT("导入表注入虚先转为文件镜像"));
+			return;
 		}
-	}
 
-	if (n == 2)
-	{
-		printf("格式: 模块名 序号\r\n");
-		char moduleName[256] = { 0 };
-		int ordinal = 0;
-		scanf_s("%s %d", moduleName, 256, &ordinal);
-		printf("模块名:%s\r\n", moduleName);
-		printf("序号:%d\r\n", ordinal);
-		PCHAR pNewBuffer = NULL;
-		UINT32 newBufferSize = 0;
-		int result = importTableInjectionByNumberInFileBuffer(m_pBuffer, m_length, moduleName, ordinal, &pNewBuffer, &newBufferSize);
-		if (result < 0)
-			AfxMessageBox(TEXT("注入失败"));
-		else
+		mCreateConsole(TEXT("导入表注入"));
+
+		printf("选择注入方式:\r\n");
+		printf("1 : 名字注入\r\n");
+		printf("2 : 序号注入\r\n");
+		printf("其他 : 退出\r\n");
+
+		int n = 0;
+
+		scanf_s("%d", &n);
+
+		if (n == 1)
 		{
-			mRefreshPage(pNewBuffer, newBufferSize);
-			AfxMessageBox(TEXT("注入成功"));
+			printf("格式: 模块名 函数名\r\n");
+			char moduleName[256] = { 0 };
+			char functionName[256] = { 0 };
+			scanf_s("%s %s", moduleName, 256, functionName, 256);
+			printf("模块名:%s\r\n", moduleName);
+			printf("函数名:%s\r\n", functionName);
+			PCHAR pNewBuffer = NULL;
+			UINT32 newBufferSize = 0;
+			int result = importTableInjectionByNameInFileBuffer(m_pBuffer, m_bufferSize, moduleName, functionName, &pNewBuffer, &newBufferSize);
+			if (result < 0)
+				AfxMessageBox(TEXT("注入失败"));
+			else
+			{
+				mRefreshPage(pNewBuffer, newBufferSize, 0);
+				AfxMessageBox(TEXT("注入成功"));
+			}
 		}
-	}
 
-	mCloseConsole();
+		if (n == 2)
+		{
+			printf("格式: 模块名 序号\r\n");
+			char moduleName[256] = { 0 };
+			int ordinal = 0;
+			scanf_s("%s %d", moduleName, 256, &ordinal);
+			printf("模块名:%s\r\n", moduleName);
+			printf("序号:%d\r\n", ordinal);
+			PCHAR pNewBuffer = NULL;
+			UINT32 newBufferSize = 0;
+			int result = importTableInjectionByNumberInFileBuffer(m_pBuffer, m_bufferSize, moduleName, ordinal, &pNewBuffer, &newBufferSize);
+			if (result < 0)
+				AfxMessageBox(TEXT("注入失败"));
+			else
+			{
+				mRefreshPage(pNewBuffer, newBufferSize, 0);
+				AfxMessageBox(TEXT("注入成功"));
+			}
+		}
+
+		mCloseConsole();
+	}
+	catch (...)
+	{
+		AfxMessageBox(TEXT("注入失败:异常"));
+	}
 }
 
 // 借壳执行按钮
-void CDialogPE::OnDlgPeMenuFakeShellExe()
+void CDialogPE::OnMenuFakeShellExe()
 {
-	TCHAR text[256] = { 0 };
+	try {
+		int needFree = 0;
+		TCHAR text[256] = { 0 };
 
-	CHAR path[MAX_PATH] = { 0 };
-	mCreateConsole(TEXT("借壳执行"));
-	printf("输入要执行的程序路径:\r\n");
-	scanf_s("%s", path, MAX_PATH);
-	printf("路径:%s\r\n", path);
-	mCloseConsole();
-	if (path[0] == 0)
-	{
-		AfxMessageBox(TEXT("路径不能为空"));
-		return;
-	}
-	CString str;
-	str += path;
-
-
-	int result;
-	PCHAR pNewBuffer = NULL;
-	UINT32 newBufferSize = 0;
-	if(m_isMemImage)
-	{
-		result = imageBufferToFileBuffer(m_pBuffer, m_length, &pNewBuffer, &newBufferSize);
-		if (result < 0)
+		CHAR path[MAX_PATH] = { 0 };
+		mCreateConsole(TEXT("借壳执行"));
+		printf("输入要执行的程序路径:\r\n");
+		scanf_s("%s", path, MAX_PATH);
+		printf("路径:%s\r\n", path);
+		mCloseConsole();
+		if (path[0] == 0)
 		{
-			AfxMessageBox(TEXT("文件转换失败"));
+			AfxMessageBox(TEXT("路径不能为空"));
 			return;
 		}
-	}
-	else
-	{
-		pNewBuffer = m_pBuffer;
-		newBufferSize = m_length;
-	}
+		CString str;
+		str += path;
 
-	result = mFakeShellRun(str, pNewBuffer, newBufferSize);
-	if (result < 0)
-	{
-		AfxMessageBox(TEXT("执行失败"));
+
+		int result;
+		PCHAR pNewBuffer = NULL;
+		UINT32 newBufferSize = 0;
+		if (m_isImageBuffer)
+		{
+			result = imageBufferToFileBuffer(m_pBuffer, m_bufferSize, &pNewBuffer, &newBufferSize);
+			if (result < 0)
+			{
+				AfxMessageBox(TEXT("文件转换失败"));
+				return;
+			}
+			needFree = 1;
+		}
+		else
+		{
+			pNewBuffer = m_pBuffer;
+			newBufferSize = m_bufferSize;
+		}
+
+		result = mFakeShellRun(str, pNewBuffer, newBufferSize);
+		if (result < 0)
+			AfxMessageBox(TEXT("执行失败"));
+		else
+			AfxMessageBox(TEXT("执行成功"));
+		if (needFree)
+			free(pNewBuffer);
+
 	}
-	else
-		AfxMessageBox(TEXT("执行成功"));
+	catch (...)
+	{
+		AfxMessageBox(TEXT("执行失败:异常"));
+	}
 }
 
 // 添加壳按钮
-void CDialogPE::OnDlgPeMenuAddShell()
+void CDialogPE::OnMenuAddShell()
 {
-	int result;
+	try {
+		int result;
+		int needFree = 0;
+		// 获取壳子文件
+		CStringA strPathA;
+		CHAR curDir[MAX_PATH] = { 0 };
+		GetCurrentDirectoryA(MAX_PATH, curDir);
+		strPathA = curDir;
+		PE_VAR_DEFINITION;
+		PE_VAR_ASSIGN(m_pBuffer);
 
+		strPathA += FILE_SHELL_PATH;
+		if (isX64(p))
+			strPathA += "x64\\";
+		else
+			strPathA += "x86\\";
 
-	// 获取壳子文件
-	CStringA strPathA;
-	CHAR curDir[MAX_PATH] = { 0 };
-	GetCurrentDirectoryA( MAX_PATH, curDir);
-	strPathA = curDir;
-	PE_VAR_DEFINITION;
-	PE_VAR_ASSIGN(m_pBuffer);
+		strPathA += FILE_SHELL_NAME;
 
-	strPathA += FILE_SHELL_PATH;
-	if (isX64(p))
-		strPathA += "x64\\";
-	else
-		strPathA += "x86\\";
+		PCHAR pBufferShell = NULL;
+		int shellBufferSize = 0;
+		result = mGetFileData(strPathA.GetString(), &pBufferShell, &shellBufferSize);
+		if (result < 0)
+		{
+			AfxMessageBox(TEXT("获取壳文件失败"));
+			return;
+		}
 
-	strPathA += FILE_SHELL_NAME;
+		// 获取exe文件
+		PCHAR pBufferExe = NULL;
+		UINT32 exeBufferSize = 0;
+		if (m_isImageBuffer)
+		{
+			result = imageBufferToFileBuffer(m_pBuffer, m_bufferSize, &pBufferExe, &exeBufferSize);
+			if (result < 0)
+			{
+				free(pBufferShell);
+				AfxMessageBox(TEXT("文件转换失败"));
+				return;
+			}
+			needFree = 1;
+		}
+		else
+		{
+			pBufferExe = m_pBuffer;
+			exeBufferSize = m_bufferSize;
+		}
 
-	PCHAR pBufferShell = NULL;
-	int shellBufferSize = 0;
-	result = mGetFileData(strPathA.GetString(), &pBufferShell, &shellBufferSize);
-	if (result < 0)
-	{
-		AfxMessageBox(TEXT("获取壳文件失败"));
-		return;
-	}
-
-	// 获取exe文件
-	PCHAR pBufferExe = NULL;
-	UINT32 exeBufferSize = 0;
-	if (m_isMemImage)
-	{
-		result = imageBufferToFileBuffer(m_pBuffer, m_length, &pBufferExe, &exeBufferSize);
+		// 将exe文件添加到壳文件新增的节中.
+		PCHAR pNewBuffer = NULL;
+		UINT32 newBufferSize = 0;
+		result = shellFileBufferApendExeFileBuffer(pBufferShell, shellBufferSize, pBufferExe, exeBufferSize, &pNewBuffer, &newBufferSize);
 		if (result < 0)
 		{
 			free(pBufferShell);
-			AfxMessageBox(TEXT("文件转换失败"));
+			if (needFree)
+				free(pBufferExe);
+			AfxMessageBox(TEXT("添加壳失败"));
 			return;
 		}
-	}
-	else
-	{
-		pBufferExe = m_pBuffer;
-		exeBufferSize = m_length;
-	}
 
-	// 将exe文件添加到壳文件新增的节中.
-	PCHAR pNewBuffer = NULL;
-	UINT32 newBufferSize = 0;
-	result = shellFileBufferApendExeFileBuffer(pBufferShell, shellBufferSize, pBufferExe, exeBufferSize, &pNewBuffer, &newBufferSize);
-	if (result < 0)
-	{
 		free(pBufferShell);
-		if (m_isMemImage)
+		if (needFree)
 			free(pBufferExe);
-		AfxMessageBox(TEXT("添加壳失败"));
-		return;
+
+		// 刷新界面
+		mRefreshPage(pNewBuffer, newBufferSize, 0);
+
+		AfxMessageBox(TEXT("添加壳成功"));
 	}
-
-	// 刷新界面
-	mRefreshPage(pNewBuffer, newBufferSize,0);
-
-	free(pBufferShell);
-	if (m_isMemImage)
-		free(pBufferExe);
+	catch(...)
+	{
+		AfxMessageBox(TEXT("添加壳失败:异常"));
+	}
 }
 
-
-void CDialogPE::OnDlgPeMenuTest()
+// 测试按钮
+void CDialogPE::OnMenuTest()
 {
 	int a = getExportItemRvaByNameInFileBuffer(m_pBuffer, "EntryFunc");
 	a = 1;

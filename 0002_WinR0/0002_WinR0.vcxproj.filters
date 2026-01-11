@@ -54,12 +54,27 @@
     <ClCompile Include="000_保护模式\000_006_task.c">
       <Filter>Resource Files\000_保护模式x86</Filter>
     </ClCompile>
+    <ClCompile Include="000_007_101012分页.c">
+      <Filter>Resource Files\000_保护模式x86</Filter>
+    </ClCompile>
+    <ClCompile Include="000_008_29912分页.c">
+      <Filter>Resource Files\000_保护模式x86</Filter>
+    </ClCompile>
+    <ClCompile Include="000_009_page.c">
+      <Filter>Resource Files\000_保护模式x86</Filter>
+    </ClCompile>
+    <ClCompile Include="000_010_TLB.c">
+      <Filter>Resource Files\000_保护模式x86</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="order_function.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="000_000_保护模式x86.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

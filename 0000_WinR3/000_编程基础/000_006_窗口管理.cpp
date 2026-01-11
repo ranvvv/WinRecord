@@ -126,7 +126,7 @@ static void s4()
 	HWND hwndDesktop = GetDesktopWindow();									// 桌面句柄
 	HWND hwndTop = FindWindow(TEXT("WinDbgFrameClass"), NULL);				// 只找顶层窗口, 也就是桌面窗口下的窗口
 	HWND hwndChild = FindWindowEx(hwndTop, NULL, TEXT("DockClass"), NULL);	// 查找子窗口
-	HWND hwndChildItem = GetDlgItem(hwndTop, 0x64);							// 查找子窗口控件
+	HWND hwndChildItem = GetDlgItem(hwndTop, 0x64);							// 查找子窗口
 }
 
 
